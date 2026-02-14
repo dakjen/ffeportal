@@ -21,6 +21,7 @@ const saveQuoteSchema = z.object({
   requestId: z.string().uuid().optional().nullable(),
   clientId: z.string().uuid().optional(),
   projectName: z.string().optional(),
+  notes: z.string().optional(),
   quoteItems: z.array(quoteItemSchema),
   netPrice: z.coerce.number().min(0),
   taxRate: z.coerce.number().min(0),
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       requestId,
       clientId,
       projectName,
+      notes,
       quoteItems: newQuoteItems,
       netPrice,
       taxRate,
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
         requestId: requestId || null,
         clientId: finalClientId,
         projectName: finalProjectName,
+        notes: notes || null,
         netPrice: netPrice.toFixed(2),
         taxRate: taxRate.toFixed(4), 
         taxAmount: taxAmount.toFixed(2),
@@ -187,57 +190,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
     }
     console.error('Save quote error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
-  }
-}
-
-export async function GET(
-  req: Request,
-  { params }: { params: { quoteId: string } }
-) {
-  try {
-    const { quoteId } = params;
-
-    const token = (await cookies()).get('auth_token')?.value;
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
-    }
-
-    const [quote] = await db.select().from(quotes).where(eq(quotes.id, quoteId));
-
-    if (!quote) {
-      return NextResponse.json({ message: 'Quote not found' }, { status: 404 });
-    }
-
-    const items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
-
-    // Fetch client and request details if available
-    let client = null;
-    if (quote.clientId) {
-        [client] = await db.select().from(users).where(eq(users.id, quote.clientId));
-    }
-
-    let request = null;
-    if (quote.requestId) {
-        [request] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
-    }
-
-    return NextResponse.json({
-      quote: {
-        ...quote,
-        quoteItems: items,
-        client: client || null,
-        request: request || null,
-      }
-    }, { status: 200 });
-
-  } catch (error) {
-    console.error('Error fetching quote by ID:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

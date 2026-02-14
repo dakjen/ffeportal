@@ -55,6 +55,7 @@ export const quotes = pgTable('quotes', {
   requestId: uuid('request_id').references(() => requests.id),
   clientId: uuid('client_id').references(() => users.id),
   projectName: varchar('project_name', { length: 256 }),
+  notes: text('notes'), // Added notes field
   netPrice: numeric('net_price').notNull(),
   taxRate: numeric('tax_rate').default('0'),
   taxAmount: numeric('tax_amount').default('0'),
@@ -113,6 +114,9 @@ export const pricingEntries = pgTable('pricing_entries', {
   pricingType: pricingTypeEnum('pricing_type').default('flat').notNull(),
   roundOption: roundOptionEnum('round_option').default('none').notNull(),
   description: text('description'),
+  link: text('link'),
+  projectNotes: text('project_notes'),
+  clientNotes: text('client_notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

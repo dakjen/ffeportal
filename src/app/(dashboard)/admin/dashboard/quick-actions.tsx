@@ -9,9 +9,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const createQuoteSchema = z.object({
-  projectName: z.string().min(1, 'Project Name is required'),
+  projectName: z.string().min(1, 'Quote Name is required'),
   clientId: z.string().min(1, 'Client is required'),
-  // description is not directly on quote, so remove from here
+  notes: z.string().optional(),
 });
 
 type CreateQuoteFormValues = z.infer<typeof createQuoteSchema>;
@@ -46,6 +46,7 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
         body: JSON.stringify({
           clientId: data.clientId,
           projectName: data.projectName,
+          notes: data.notes,
           quoteItems: [], // Initialize with empty array
           netPrice: 0,
           taxRate: 0,
@@ -126,7 +127,7 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Project Name</label>
+                <label className="block text-sm font-medium text-gray-700">Quote Name</label>
                 <input
                   {...register('projectName')}
                   placeholder="e.g. Summer Lobby Refresh"
@@ -151,7 +152,15 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
                 {errors.clientId && <p className="text-red-600 text-xs mt-1">{errors.clientId.message}</p>}
               </div>
 
-              {/* Description removed as it's not a direct field on quotes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Project Notes (Optional)</label>
+                <textarea
+                  {...register('notes')}
+                  rows={2}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
+                  placeholder="Internal notes about this project..."
+                />
+              </div>
 
               {error && <p className="text-red-600 text-sm">{error}</p>}
 

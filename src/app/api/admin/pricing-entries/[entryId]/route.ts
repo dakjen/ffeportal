@@ -15,6 +15,9 @@ const updatePricingEntrySchema = z.object({
   pricingType: z.enum(['hourly', 'flat']).optional(),
   roundOption: z.enum(['none', 'up', 'down']).optional(),
   description: z.string().optional(),
+  link: z.string().optional(),
+  projectNotes: z.string().optional(),
+  clientNotes: z.string().optional(),
 });
 
 export async function GET(
@@ -68,6 +71,9 @@ export async function PUT(
     if (data.pricingType !== undefined) updateData.pricingType = data.pricingType;
     if (data.roundOption !== undefined) updateData.roundOption = data.roundOption;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.link !== undefined) updateData.link = data.link;
+    if (data.projectNotes !== undefined) updateData.projectNotes = data.projectNotes;
+    if (data.clientNotes !== undefined) updateData.clientNotes = data.clientNotes;
 
     const [updatedEntry] = await db.update(pricingEntries)
       .set(updateData)

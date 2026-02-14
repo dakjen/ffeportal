@@ -35,9 +35,10 @@ interface SortableItemProps {
   item: QuoteItem;
   onRemove: (id: string) => void;
   onUpdate: (id: string, field: keyof QuoteItem, value: any) => void;
+  isEditable: boolean;
 }
 
-function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
+function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -67,9 +68,9 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
       style={style}
       className="flex flex-col p-4 border rounded-md bg-white shadow-sm mb-2 gap-3"
     >
-      <div className="flex items-center justify-between cursor-move" {...attributes} {...listeners}>
+      <div className="flex items-center justify-between" {...(isEditable ? { ...attributes, ...listeners, className: "cursor-move" } : {})}>
         <div className="flex items-center gap-2">
-          {item.id?.startsWith('custom-') ? (
+          {item.id?.startsWith('custom-') && isEditable ? (
             <input
               type="text"
               value={item.serviceName}
@@ -86,46 +87,60 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
             </span>
           )}
         </div>
-        <button type="button" onClick={() => onRemove(item.id!)} className="text-red-500 hover:text-red-700 text-xs font-medium">
-          Remove
-        </button>
+        {isEditable && (
+          <button type="button" onClick={() => onRemove(item.id!)} className="text-red-500 hover:text-red-700 text-xs font-medium">
+            Remove
+          </button>
+        )}
       </div>
       
       <div className="flex flex-col gap-2">
-        <textarea
-          value={item.description || ''}
-          onChange={(e) => onUpdate(item.id!, 'description', e.target.value)}
-          placeholder="Description"
-          className="w-full text-sm text-gray-600 resize-none border border-gray-200 rounded p-2 focus:outline-none focus:border-[var(--brand-red)]"
-          rows={2}
-        />
+        {isEditable ? (
+          <textarea
+            value={item.description || ''}
+            onChange={(e) => onUpdate(item.id!, 'description', e.target.value)}
+            placeholder="Description"
+            className="w-full text-sm text-gray-600 resize-none border border-gray-200 rounded p-2 focus:outline-none focus:border-[var(--brand-red)]"
+            rows={2}
+          />
+        ) : (
+          <p className="text-sm text-gray-600">{item.description || '-'}</p>
+        )}
         
         <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="text-xs text-gray-500 font-medium block mb-1">
               {item.pricingType === 'hourly' ? 'Hours' : 'Quantity'}
             </label>
-            <input
-              type="number"
-              min="0.1"
-              step="0.1"
-              value={item.quantity}
-              onChange={(e) => handleQuantityChange(parseFloat(e.target.value) || 0)}
-              className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
-            />
+            {isEditable ? (
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={item.quantity}
+                onChange={(e) => handleQuantityChange(parseFloat(e.target.value) || 0)}
+                className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
+              />
+            ) : (
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">{item.quantity.toFixed(2)}</p>
+            )}
           </div>
           <div className="flex-1">
             <label className="text-xs text-gray-500 font-medium block mb-1">
               Unit Price ($)
             </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={item.unitPrice}
-              onChange={(e) => handleUnitPriceChange(parseFloat(e.target.value) || 0)}
-              className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
-            />
+            {isEditable ? (
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.unitPrice}
+                onChange={(e) => handleUnitPriceChange(parseFloat(e.target.value) || 0)}
+                className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
+              />
+            ) : (
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">${item.unitPrice.toFixed(2)}</p>
+            )}
           </div>
           <div className="flex-1 text-right pb-2">
             <span className="text-xs text-gray-500 block">Total</span>
@@ -390,6 +405,8 @@ export default function QuoteEditorPage() {
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
   if (!quote) return <div className="p-6">Quote not found.</div>;
 
+  const isEditable = quote.status === 'draft';
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -406,79 +423,111 @@ export default function QuoteEditorPage() {
           >
             Delete Quote
           </button>
-          <Link
-            href="/admin/pricing"
-            target="_blank"
-            className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-[var(--brand-black)] shadow-sm hover:bg-gray-300 transition-colors"
-          >
-            Price This
-          </Link>
+          {isEditable && (
+            <Link
+              href="/admin/pricing"
+              target="_blank"
+              className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-[var(--brand-black)] shadow-sm hover:bg-gray-300 transition-colors"
+            >
+              Price This
+            </Link>
+          )}
         </div>
       </div>
 
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-md">{error}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Available Services */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-[var(--brand-black)]">Service Catalog</h3>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-            {availableServices.length === 0 ? (
-              <p className="text-sm text-gray-500">No services found. Add them in Services & Pricing.</p>
-            ) : (
-              availableServices.map((service) => (
-                <div key={service.id} className="p-4 border rounded-lg bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-[var(--brand-black)]">{service.name}</h4>
-                    <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded text-gray-600">
-                      ${parseFloat(service.price).toFixed(2)}
-                    </span>
+        {isEditable && (
+          // Available Services
+          <div className="space-y-4">
+            <h3 className="font-semibold text-[var(--brand-black)]">Service Catalog</h3>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+              {availableServices.length === 0 ? (
+                <p className="text-sm text-gray-500">No services found. Add them in Services & Pricing.</p>
+              ) : (
+                availableServices.map((service) => (
+                  <div key={service.id} className="p-4 border rounded-lg bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-[var(--brand-black)]">{service.name}</h4>
+                      <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded text-gray-600">
+                        ${parseFloat(service.price).toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleAddService(service)}
+                      className="w-full py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded hover:bg-[var(--brand-black)] hover:text-white transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" /> Add to Quote
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
-                  <button
-                    type="button"
-                    onClick={() => handleAddService(service)}
-                    className="w-full py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded hover:bg-[var(--brand-black)] hover:text-white transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" /> Add to Quote
-                  </button>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleAddCustomItem}
+              className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
+            >
+              <Plus className="h-4 w-4" /> Add Custom Item
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleAddCustomItem}
-            className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
-          >
-            <Plus className="h-4 w-4" /> Add Custom Item
-          </button>
-        </div>
+        )}
 
         {/* Quote Builder Canvas */}
         <div className="lg:col-span-2 space-y-4">
           <h3 className="font-semibold text-[var(--brand-black)]">Quote Items ({selectedQuoteItems.length})</h3>
           
-          <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300 min-h-[300px]">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={selectedQuoteItems.map(item => item.id!)} strategy={verticalListSortingStrategy}>
-                {selectedQuoteItems.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
-                    <p>Select services from the catalog to build your quote.</p>
-                  </div>
-                ) : (
-                  selectedQuoteItems.map((item) => (
-                    <SortableItem
-                      key={item.id!}
-                      item={item}
-                      onRemove={handleRemoveService}
-                      onUpdate={handleUpdateServiceItem}
-                    />
-                  ))
-                )}
-              </SortableContext>
-            </DndContext>
-          </div>
+          {isEditable ? (
+            <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300 min-h-[300px]">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={selectedQuoteItems.map(item => item.id!)} strategy={verticalListSortingStrategy}>
+                  {selectedQuoteItems.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
+                      <p>Select services from the catalog to build your quote.</p>
+                    </div>
+                  ) : (
+                    selectedQuoteItems.map((item) => (
+                      <SortableItem
+                        key={item.id!}
+                        item={item}
+                        onRemove={handleRemoveService}
+                        onUpdate={handleUpdateServiceItem}
+                        isEditable={isEditable}
+                      />
+                    ))
+                  )}
+                </SortableContext>
+              </DndContext>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {selectedQuoteItems.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.serviceName}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{item.description}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{item.quantity}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 text-right">${item.unitPrice.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium text-right">${item.price.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Pricing Summary */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">

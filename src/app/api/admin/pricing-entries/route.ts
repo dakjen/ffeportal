@@ -15,6 +15,9 @@ const pricingEntrySchema = z.object({
   pricingType: z.enum(['hourly', 'flat']).default('flat'),
   roundOption: z.enum(['none', 'up', 'down']).default('none'),
   description: z.string().optional(),
+  link: z.string().optional(),
+  projectNotes: z.string().optional(),
+  clientNotes: z.string().optional(),
 });
 
 export async function GET(req: Request) {
@@ -53,6 +56,9 @@ export async function POST(req: Request) {
       pricingType: data.pricingType,
       roundOption: data.roundOption,
       description: data.description,
+      link: data.link,
+      projectNotes: data.projectNotes,
+      clientNotes: data.clientNotes,
     }).returning();
 
     return NextResponse.json({ message: 'Pricing entry added successfully', pricingEntry: newPricingEntry }, { status: 201 });
