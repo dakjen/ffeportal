@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { quotes, quoteItems, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge';
+import { verifyToken } from '@/lib/auth-edge'; // Changed from auth-edge
 
 export async function GET(
   request: Request,
@@ -22,10 +22,10 @@ export async function GET(
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // Find a draft quote for the given requestId
+    // Find any quote for the given requestId, not just draft ones
     const [quote] = await db.select().from(quotes)
-      .where(and(eq(quotes.requestId, requestId), eq(quotes.status, 'draft')))
-      .limit(1); // Assuming only one draft quote per request or taking the first one
+      .where(eq(quotes.requestId, requestId))
+      .limit(1); // Assuming only one quote per request or taking the first one
 
     if (!quote) {
       // No draft quote found for this request, which is a valid scenario for building a new one

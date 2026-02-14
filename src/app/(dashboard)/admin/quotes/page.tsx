@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { quotes, users, requests } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import Link from 'next/link';
-import { Edit, Trash } from 'lucide-react';
+import { Edit, Trash, Download } from 'lucide-react';
 import DeleteQuoteButton from './delete-quote-button'; // Import the new component
 
 export default async function AdminQuotesPage() {
@@ -80,6 +80,9 @@ export default async function AdminQuotesPage() {
                   <td className="py-3 px-4 text-gray-700 font-medium">${parseFloat(quote.totalPrice).toFixed(2)}</td>
                   <td className="py-3 px-4 text-gray-600">{new Date(quote.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-right flex justify-end gap-2">
+                    <Link href={`/api/quotes/${quote.id}/pdf`} target="_blank" className="text-gray-600 hover:text-[var(--brand-black)]">
+                      <Download className="h-4 w-4" />
+                    </Link>
                     <Link href={`/admin/quotes/${quote.id}`} className="text-gray-600 hover:text-[var(--brand-black)]">
                       <Edit className="h-4 w-4" />
                     </Link>

@@ -370,7 +370,7 @@ export default function QuoteBuilderPage() {
     const newId = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newItem: QuoteItem = {
       id: newId,
-      serviceName: 'Custom Service',
+      serviceName: '', // Initialize as empty string
       description: '',
       unitPrice: 0,
       quantity: 1,
@@ -462,6 +462,7 @@ export default function QuoteBuilderPage() {
                   <button
                     type="button"
                     onClick={() => handleAddService(service)}
+                    disabled={!isQuoteEditable} // Added disabled
                     className="w-full py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded hover:bg-[var(--brand-black)] hover:text-white transition-colors flex items-center justify-center gap-1"
                   >
                     <Plus className="h-3 w-3" /> Add to Quote
@@ -473,6 +474,7 @@ export default function QuoteBuilderPage() {
           <button
             type="button"
             onClick={() => handleAddCustomItem()} // Changed to arrow function
+            disabled={!isQuoteEditable} // Added disabled
             className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
           >
             <Plus className="h-4 w-4" /> Add Custom Item
@@ -526,6 +528,7 @@ export default function QuoteBuilderPage() {
                 value={taxRate * 100} // Display as percentage
                 onChange={(e) => setTaxRate(parseFloat(e.target.value) / 100 || 0)}
                 className="w-24 p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-right text-[var(--brand-black)]"
+                readOnly={!isQuoteEditable} // Added readOnly
               />
             </div>
 
@@ -546,6 +549,7 @@ export default function QuoteBuilderPage() {
                 value={deliveryFee}
                 onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
                 className="w-24 p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-right text-[var(--brand-black)]"
+                readOnly={!isQuoteEditable} // Added readOnly
               />
             </div>
 
@@ -565,7 +569,7 @@ export default function QuoteBuilderPage() {
               <button
                 type="button"
                 onClick={() => { setValue('status', 'draft'); handleSubmit(onSubmit)(); }}
-                disabled={savingQuote}
+                disabled={savingQuote || !isQuoteEditable}
                 className="px-5 py-2.5 bg-gray-800 text-white rounded-md text-sm font-medium hover:bg-gray-900 disabled:opacity-50"
               >
                 Save Draft
@@ -573,7 +577,7 @@ export default function QuoteBuilderPage() {
               <button
                 type="button"
                 onClick={() => { setValue('status', 'sent'); handleSubmit(onSubmit)(); }}
-                disabled={savingQuote || selectedQuoteItems.length === 0}
+                disabled={savingQuote || selectedQuoteItems.length === 0 || !isQuoteEditable}
                 className="px-5 py-2.5 bg-[var(--brand-red)] text-white rounded-md text-sm font-medium hover:bg-[#5a0404]"
               >
                 Send Quote

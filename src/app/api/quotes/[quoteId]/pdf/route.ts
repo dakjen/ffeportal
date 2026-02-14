@@ -4,8 +4,10 @@ import { db } from '@/db';
 import { quotes, quoteItems, requests, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge';
+import { verifyToken } from '@/lib/auth-edge'; // Changed from auth-edge
 import { generateQuotePdf } from '@/lib/pdf-generator';
+
+export const runtime = 'nodejs'; // Explicitly set to Node.js runtime
 
 export async function GET(
   request: Request,
@@ -96,11 +98,15 @@ export async function GET(
     // Generate PDF
     const pdfBuffer = await generateQuotePdf(quoteDetails);
 
+    const formattedDate = new Date(quote.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD
+    const shortQuoteId = quote.id.substring(0, 6);
+    const filename = `DesignDomainLLC-Quote-${formattedDate}-${shortQuoteId}.pdf`;
+
     // Return PDF as response
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="quote-${quoteId}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': pdfBuffer.length.toString(),
       },
     });

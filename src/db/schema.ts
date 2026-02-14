@@ -66,6 +66,7 @@ export const quotes = pgTable('quotes', {
   clientId: uuid('client_id').references(() => users.id),
   projectName: varchar('project_name', { length: 256 }),
   notes: text('notes'), // Added notes field
+
   netPrice: numeric('net_price').notNull(),
   taxRate: numeric('tax_rate').default('0'),
   taxAmount: numeric('tax_amount').default('0'),
@@ -73,6 +74,7 @@ export const quotes = pgTable('quotes', {
   totalPrice: numeric('total_price').notNull(),
   status: quoteStatusEnum('status').default('draft').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+
 });
 
 export const quoteItems = pgTable('quote_items', {

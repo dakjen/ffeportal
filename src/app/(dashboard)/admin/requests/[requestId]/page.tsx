@@ -3,12 +3,18 @@ import { quotes, requests, users, quoteItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge';
+import { verifyToken } from '@/lib/auth-edge'; // Revert to auth-edge
 import Link from 'next/link';
 import { Download, ArrowLeft, Edit, Plus } from 'lucide-react';
+import { getShortId } from '@/lib/pdf-generator';
 
-export default async function AdminRequestDetailsPage({ params }: { params: { requestId: string } }) {
-  const { requestId } = await params;
+interface AdminRequestDetailsPageProps {
+  params: Promise<{ requestId: string }>;
+}
+
+export default async function AdminRequestDetailsPage({ params }: AdminRequestDetailsPageProps) {
+  const resolvedParams = await params;
+  const { requestId } = resolvedParams;
 
   const token = (await cookies()).get('auth_token')?.value;
   if (!token) {
@@ -95,7 +101,6 @@ export default async function AdminRequestDetailsPage({ params }: { params: { re
             </div>
             <div>
                 <p className="text-gray-700 mb-2"><strong>Status:</strong> <span className="capitalize">{request.status}</span></p>
-                <p className="text-gray-700 mb-2"><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
             </div>
         </div>
         <div className="mt-4 pt-4 border-t border-gray-100">
@@ -111,8 +116,9 @@ export default async function AdminRequestDetailsPage({ params }: { params: { re
             <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Quote Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p className="text-gray-700"><strong>Quote ID:</strong> {quote.id}</p>
-                    <p className="text-gray-700"><strong>Status:</strong> <span className="font-semibold capitalize">{quote.status}</span></p>
+                    <p className="text-gray-700 mb-2"><strong>Quote ID:</strong> {getShortId(quote.id)}</p>
+                    <p className="text-gray-700 mb-2"><strong>Status:</strong> <span className="font-semibold capitalize">{quote.status}</span></p>
+                    <p className="text-gray-700 mb-2"><strong>Quote Created:</strong> {new Date(quote.createdAt).toLocaleString()}</p>
                 </div>
                 <div>
                     <p className="text-gray-700">Items Subtotal: <span className="font-semibold">${parseFloat(quote.netPrice || '0').toFixed(2)}</span></p>

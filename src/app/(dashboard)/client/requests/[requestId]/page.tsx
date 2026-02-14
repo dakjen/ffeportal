@@ -8,8 +8,13 @@ import { verifyToken } from '@/lib/auth-edge';
 import Link from 'next/link';
 import { Download, ArrowLeft, Clock } from 'lucide-react';
 
-export default async function ClientQuoteViewPage({ params }: { params: { requestId: string } }) {
-  const { requestId } = params;
+interface ClientQuoteViewPageProps {
+  params: Promise<{ requestId: string }>;
+}
+
+export default async function ClientQuoteViewPage({ params }: ClientQuoteViewPageProps) {
+  const resolvedParams = await params;
+  const { requestId } = resolvedParams;
 
   const token = (await cookies()).get('auth_token')?.value;
   if (!token) {

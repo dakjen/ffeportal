@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
@@ -14,6 +14,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-slot": "^1.2.4",
+    "@react-pdf/renderer": "^4.3.2",
     "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
@@ -22,7 +23,6 @@
     "jspdf": "^4.1.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
-    "pdfkit": "^0.17.2",
     "pg": "^8.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
