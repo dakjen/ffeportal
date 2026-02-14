@@ -4,7 +4,8 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken, verifyPassword, hashPassword } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
+import { verifyPassword, hashPassword } from '@/lib/auth';
 
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),

@@ -5,7 +5,7 @@ import { pricingEntries } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 const updatePricingEntrySchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),

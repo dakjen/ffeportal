@@ -8,6 +8,7 @@ export const quoteStatusEnum = pgEnum('quote_status', ['draft', 'sent', 'approve
 export const pricingTypeEnum = pgEnum('pricing_type', ['hourly', 'flat']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['pending', 'approved', 'paid', 'rejected']);
 export const roundOptionEnum = pgEnum('round_option', ['none', 'up', 'down']); // New Enum
+export const contractorRequestStatusEnum = pgEnum('contractor_request_status', ['pending', 'approved', 'rejected']); // New Enum
 
 // Tables
 export const users = pgTable('users', {
@@ -19,6 +20,15 @@ export const users = pgTable('users', {
   role: userRoleEnum('role').notNull(),
   parentId: uuid('parent_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const contractorRequests = pgTable('contractor_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clientId: uuid('client_id').notNull().references(() => users.id),
+  adminId: uuid('admin_id').notNull().references(() => users.id),
+  status: contractorRequestStatusEnum('status').default('pending').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const requests = pgTable('requests', {
@@ -133,6 +143,13 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   comments: many(comments),
   notifications: many(notifications),
   quotes: many(quotes),
+  contractorRequestsAsClient: many(contractorRequests, { relationName: 'client_requests' }),
+  contractorRequestsAsAdmin: many(contractorRequests, { relationName: 'admin_requests' }),
+}));
+
+export const contractorRequestsRelations = relations(contractorRequests, ({ one }) => ({
+  client: one(users, { fields: [contractorRequests.clientId], references: [users.id], relationName: 'client_requests' }),
+  admin: one(users, { fields: [contractorRequests.adminId], references: [users.id], relationName: 'admin_requests' }),
 }));
 
 export const requestsRelations = relations(requests, ({ one, many }) => ({

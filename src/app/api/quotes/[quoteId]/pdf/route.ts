@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { quotes, quoteItems, requests, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 import { generateQuotePdf } from '@/lib/pdf-generator';
 
 export async function GET(

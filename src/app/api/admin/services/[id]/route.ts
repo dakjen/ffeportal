@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { services } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 export async function DELETE(
   request: Request,

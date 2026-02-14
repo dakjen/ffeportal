@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { quotes, quoteItems, requests, users, notifications } from '@/db/schema';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 import { eq } from 'drizzle-orm';
 import sgMail from '@sendgrid/mail';
 

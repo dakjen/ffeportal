@@ -4,7 +4,7 @@ import { quotes, requests, users, quoteItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 import Link from 'next/link';
 import { Download, ArrowLeft, Clock } from 'lucide-react';
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, LayoutDashboard, ClipboardList, Users, Plus, DollarSign, Settings, FileText } from 'lucide-react'; // Added Settings icon
+import { LogOut, LayoutDashboard, ClipboardList, Users, Plus, DollarSign, Settings, FileText, UserPlus } from 'lucide-react'; // Added Settings icon
 
 export default function DashboardLayout({
   children,
@@ -75,6 +75,9 @@ export default function DashboardLayout({
                       <Link href="/admin/invoices" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : ''}`}>
                         Invoices
                       </Link>
+                      <Link href="/admin/contractor-requests" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/contractor-requests') ? 'text-[var(--brand-beige)]' : ''}`}>
+                        Contractor Requests
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -95,6 +98,9 @@ export default function DashboardLayout({
                 <Link href="/client/team" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/team' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Users className="h-4 w-4" /> Team
                 </Link>
+                <Link href="/client/request-contractor" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/client/request-contractor') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
+                  <UserPlus className="h-4 w-4" /> Request Contractor
+                </Link>
                 <Link href="/client/settings" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/settings' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Users className="h-4 w-4" /> Settings
                 </Link>
@@ -108,6 +114,9 @@ export default function DashboardLayout({
                 </Link>
                 <Link href="/contractor/invoices/new" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/contractor/invoices/new' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Plus className="h-4 w-4" /> New Invoice
+                </Link>
+                <Link href="/contractor/settings" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/contractor/settings') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
+                  <Settings className="h-4 w-4" /> Company Info
                 </Link>
               </>
             )}

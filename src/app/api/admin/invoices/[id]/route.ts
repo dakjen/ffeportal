@@ -4,7 +4,7 @@ import { invoices } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 const updateInvoiceSchema = z.object({
   status: z.enum(['pending', 'approved', 'paid', 'rejected']),

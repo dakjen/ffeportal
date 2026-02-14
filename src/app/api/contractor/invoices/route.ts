@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { invoices } from '@/db/schema';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 const invoiceSchema = z.object({
   projectName: z.string().min(1, 'Project Name is required'),

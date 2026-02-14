@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { quotes, quoteItems, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 export async function GET(
   request: Request,

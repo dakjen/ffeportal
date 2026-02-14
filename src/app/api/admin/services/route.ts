@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { services } from '@/db/schema';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 import { desc } from 'drizzle-orm';
 
 const serviceSchema = z.object({

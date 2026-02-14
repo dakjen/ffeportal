@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
 import { requests, users } from '@/db/schema';
 import { eq, desc, inArray, or } from 'drizzle-orm';

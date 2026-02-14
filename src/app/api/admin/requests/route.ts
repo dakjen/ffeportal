@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { requests } from '@/db/schema';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth-edge';
 
 const createRequestSchema = z.object({
   clientId: z.string().uuid('Invalid Client ID'),
