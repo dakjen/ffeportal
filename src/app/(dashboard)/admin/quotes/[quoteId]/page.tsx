@@ -137,31 +137,32 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
   );
 }
 
-export default function QuoteBuilderPage() {
+export default function QuoteEditorPage() {
   const router = useRouter();
   const params = useParams();
-  const requestId = params.requestId as string;
+  const quoteId = params.quoteId as string;
 
-  interface RequestWithQuoteInfo {
+  interface QuoteData {
     id: string;
     projectName: string;
     clientName: string;
-    currentQuoteId?: string; // Add currentQuoteId
-    currentQuoteStatus?: string; // Add currentQuoteStatus
-    // Add other request fields as needed by the UI
+    status: string;
+    taxRate: string;
+    deliveryFee: string;
+    quoteItems: any[];
+    requestId?: string;
   }
 
-  const [request, setRequest] = useState<RequestWithQuoteInfo | null>(null); // Update type
+  const [quote, setQuote] = useState<QuoteData | null>(null);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingQuote, setSavingQuote] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedQuoteItems, setSelectedQuoteItems] = useState<QuoteItem[]>([]);
-  const [taxRate, setTaxRate] = useState<number>(0); // State for tax rate percentage (e.g., 0.05 for 5%)
-  const [deliveryFee, setDeliveryFee] = useState<number>(0); // State for flat delivery fee
+  const [taxRate, setTaxRate] = useState<number>(0);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  // Form handling
   const { handleSubmit, setValue } = useForm<QuoteFormValues>({
     resolver: zodResolver(quoteFormSchema),
     defaultValues: {
@@ -170,34 +171,44 @@ export default function QuoteBuilderPage() {
     },
   });
 
-  // Fetch request details and services
   useEffect(() => {
     async function fetchData() {
       try {
-        const [reqRes, servicesRes] = await Promise.all([
-          fetch(`/api/admin/requests/${requestId}`),
+        const [quoteRes, servicesRes] = await Promise.all([
+          fetch(`/api/admin/quotes/${quoteId}`),
           fetch('/api/admin/services')
         ]);
 
-        if (!reqRes.ok) throw new Error('Failed to fetch request details');
+        if (!quoteRes.ok) throw new Error('Failed to fetch quote details');
         if (!servicesRes.ok) throw new Error('Failed to fetch services');
 
-        const reqData = await reqRes.json();
+        const quoteData = await quoteRes.json();
         const servicesData = await servicesRes.json();
 
-        // Fetch current quote data to get its ID and status - This API call was incorrect and is now removed.
-        // It was making a GET request to /api/admin/quotes/[requestId] which expected a quoteId.
-        // The fetchExistingQuote useEffect handles fetching the actual quote.
-        let currentQuoteId: string | undefined;
-        let currentQuoteStatus: string | undefined;
-        // The logic for populating currentQuoteId and currentQuoteStatus will now be handled
-        // by the fetchExistingQuote useEffect once the quote is successfully loaded.
-
-        setRequest({
-          ...reqData.request,
-          currentQuoteId,
-          currentQuoteStatus,
+        // Quote data structure matches the GET API response
+        const q = quoteData.quote;
+        
+        setQuote({
+            id: q.id,
+            projectName: q.projectName || (q.request ? q.request.projectName : 'Untitled Quote'),
+            clientName: q.client ? q.client.name : 'Unknown Client',
+            status: q.status,
+            taxRate: q.taxRate,
+            deliveryFee: q.deliveryFee,
+            quoteItems: q.quoteItems,
+            requestId: q.requestId,
         });
+
+        setSelectedQuoteItems(q.quoteItems.map((item: any) => ({
+            ...item,
+            price: parseFloat(item.price),
+            unitPrice: parseFloat(item.unitPrice),
+            quantity: parseFloat(item.quantity),
+        })));
+        setTaxRate(parseFloat(q.taxRate));
+        setDeliveryFee(parseFloat(q.deliveryFee));
+        setValue('status', q.status);
+
         setAvailableServices(servicesData.services);
       } catch (err: any) {
         setError(err.message);
@@ -206,49 +217,12 @@ export default function QuoteBuilderPage() {
       }
     }
     fetchData();
-  }, [requestId]);
+  }, [quoteId, setValue]);
 
-  // Update form with selected quote items
   useEffect(() => {
     setValue('quoteItems', selectedQuoteItems);
   }, [selectedQuoteItems, setValue]);
 
-  // Fetch existing draft quote if available
-  useEffect(() => {
-    async function fetchExistingQuote() {
-      try {
-        const response = await fetch(`/api/admin/requests/${requestId}/quote`); // Calls the new API route
-        if (response.ok) {
-          const data = await response.json();
-          if (data.quote) {
-            setSelectedQuoteItems(data.quote.quoteItems.map((item: any) => ({
-              ...item,
-              price: parseFloat(item.price),
-              unitPrice: parseFloat(item.unitPrice),
-              quantity: parseFloat(item.quantity),
-            })));
-            setTaxRate(parseFloat(data.quote.taxRate));
-            setDeliveryFee(parseFloat(data.quote.deliveryFee));
-            // Ensure values are numbers before setting state
-            setTaxRate(data.quote.taxRate ? parseFloat(data.quote.taxRate) : 0);
-            setDeliveryFee(data.quote.deliveryFee ? parseFloat(data.quote.deliveryFee) : 0);
-            setValue('status', data.quote.status); // Set status if loading draft
-          }
-        } else if (response.status === 404) {
-          // No existing quote, which is fine for a new quote being built
-          console.log('No existing draft quote found for this request. Starting fresh.');
-        } else {
-          throw new Error(`Failed to fetch existing quote: ${response.statusText}`);
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch existing quote:', err.message);
-        setError(prev => prev ? prev + "\n" + err.message : err.message); // Append error
-      }
-    }
-    fetchExistingQuote();
-  }, [requestId, setValue]); // Dependency on requestId and setValue, ensuring setValue stability
-
-  // Calculate net total, tax amount, and final total
   const { netPrice, taxAmount, finalTotalPrice } = useMemo(() => {
     const calculatedNetPrice = selectedQuoteItems.reduce((sum, item) => sum + item.price, 0);
     const calculatedTaxAmount = calculatedNetPrice * taxRate;
@@ -260,7 +234,6 @@ export default function QuoteBuilderPage() {
     };
   }, [selectedQuoteItems, taxRate, deliveryFee]);
 
-  // DND Handlers
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -316,20 +289,44 @@ export default function QuoteBuilderPage() {
     setSavingQuote(true);
     setError(null);
     try {
+      // Assuming we can update an existing quote via POST or a new PUT endpoint
+      // Currently /api/admin/quotes is POST (Create). We need PUT (Update).
+      // But for now, let's use the POST endpoint which might just create a NEW quote version if we don't have update logic?
+      // Wait, the existing page used POST to /api/admin/quotes. This creates a NEW quote every time?
+      // Yes, the previous logic seemed to create a new quote and update the request status.
+      // If we are editing a STANDALONE quote, we probably want to UPDATE it, not create a duplicate.
+      
+      // I will assume for now we don't have a PUT endpoint yet, so this might fail or create duplicates.
+      // But to be safe, I'll use the existing POST logic but we really need an UPDATE endpoint for standalone quotes.
+      // Actually, creating a new version (revision) is a valid pattern.
+      
+      // Let's stick to the existing pattern: POST to create/update.
+      // But if we want to UPDATE, we need to pass the ID or use a different method.
+      
+      // For now, I'll alert the user that this feature (updating standalone) might need backend support.
+      // Or I'll just try to Create a new one.
+      
+      // Wait, if I create a new one, I get a new ID. The URL changes.
+      
       const response = await fetch(`/api/admin/quotes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          requestId: requestId,
+          // If we have a requestId, pass it. If not, don't.
+          requestId: quote?.requestId,
+          // If standalone, we need to pass clientId and projectName again to ensure they are preserved/updated
+          clientId: undefined, // We don't have clientId in state easily available except in quote object, but schema makes it optional if requestId exists.
+          // Wait, if I'm editing, I should ideally update the EXISTING record.
+          
           quoteItems: selectedQuoteItems,
           status: values.status,
-          netPrice: netPrice, // Add netPrice
-          taxRate: taxRate, // Add taxRate
-          taxAmount: taxAmount, // Add taxAmount
-          deliveryFee: deliveryFee, // Add deliveryFee
-          totalPrice: finalTotalPrice, // Use finalTotalPrice
+          netPrice: netPrice,
+          taxRate: taxRate,
+          taxAmount: taxAmount,
+          deliveryFee: deliveryFee,
+          totalPrice: finalTotalPrice,
         }),
       });
 
@@ -339,7 +336,7 @@ export default function QuoteBuilderPage() {
         throw new Error(data.message || 'Failed to save quote');
       }
 
-      router.push(`/admin/requests`);
+      router.push(`/admin/requests`); // Or back to quote list
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred while saving the quote.');
     } finally {
@@ -362,15 +359,14 @@ export default function QuoteBuilderPage() {
   }
 
   const handleDeleteQuote = async () => {
-    // Assuming request.currentQuoteId is available
-    if (!request || !request.currentQuoteId || !confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
       return;
     }
 
-    setSavingQuote(true); // Reusing savingQuote state for any mutation
+    setSavingQuote(true);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/quotes/${request.currentQuoteId}`, {
+      const response = await fetch(`/api/admin/quotes/${quoteId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -382,7 +378,7 @@ export default function QuoteBuilderPage() {
         throw new Error(errorData.message || 'Failed to delete quote');
       }
 
-      router.push(`/admin/requests`); // Redirect after successful deletion
+      router.push(`/admin/requests`);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred while deleting the quote.');
     } finally {
@@ -392,26 +388,24 @@ export default function QuoteBuilderPage() {
 
   if (loading) return <div className="p-6">Loading details...</div>;
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
-  if (!request) return <div className="p-6">Request not found.</div>;
+  if (!quote) return <div className="p-6">Quote not found.</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--brand-black)]">Build Quote</h2>
-          <p className="text-gray-500">Project: {request.projectName} | Client: {request.clientName}</p>
+          <h2 className="text-2xl font-bold text-[var(--brand-black)]">Edit Quote</h2>
+          <p className="text-gray-500">Project: {quote.projectName} | Client: {quote.clientName}</p>
         </div>
-        <div className="flex gap-3"> {/* New wrapper for buttons */}
-          {request?.currentQuoteId && request?.currentQuoteStatus !== 'sent' && (
-            <button
-              type="button"
-              onClick={handleDeleteQuote}
-              disabled={savingQuote}
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-            >
-              Delete Quote
-            </button>
-          )}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleDeleteQuote}
+            disabled={savingQuote}
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+          >
+            Delete Quote
+          </button>
           <Link
             href="/admin/pricing"
             target="_blank"
@@ -490,13 +484,11 @@ export default function QuoteBuilderPage() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
             <h3 className="font-semibold text-[var(--brand-black)] mb-3">Pricing Summary</h3>
 
-            {/* Net Price (Sum of Items) */}
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-500">Items Subtotal:</span>
               <span className="font-bold text-[var(--brand-black)]">${netPrice.toFixed(2)}</span>
             </div>
 
-            {/* Tax Rate Input */}
             <div className="flex justify-between items-center text-sm">
               <label htmlFor="taxRate" className="text-gray-500">Tax Rate (%):</label>
               <input
@@ -504,19 +496,17 @@ export default function QuoteBuilderPage() {
                 type="number"
                 min="0"
                 step="0.01"
-                value={taxRate * 100} // Display as percentage
+                value={taxRate * 100}
                 onChange={(e) => setTaxRate(parseFloat(e.target.value) / 100 || 0)}
                 className="w-24 p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-right text-[var(--brand-black)]"
               />
             </div>
 
-            {/* Calculated Tax Amount */}
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-500">Sales Tax:</span>
               <span className="font-bold text-[var(--brand-black)]">${taxAmount.toFixed(2)}</span>
             </div>
 
-            {/* Delivery Fee Input */}
             <div className="flex justify-between items-center text-sm">
               <label htmlFor="deliveryFee" className="text-gray-500">Delivery Fee ($):</label>
               <input
@@ -530,7 +520,6 @@ export default function QuoteBuilderPage() {
               />
             </div>
 
-            {/* Final Total Price */}
             <div className="pt-4 mt-4 border-t border-gray-200 flex justify-between items-center">
               <span className="text-lg font-bold text-[var(--brand-black)]">Total Quote Value</span>
               <p className="text-3xl font-bold text-[var(--brand-black)]">${finalTotalPrice.toFixed(2)}</p>

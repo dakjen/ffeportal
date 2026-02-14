@@ -34,6 +34,11 @@ export async function GET(
       return NextResponse.json({ message: 'Quote not found' }, { status: 404 });
     }
 
+    // Prevent clients from accessing draft quotes
+    if (userRole !== 'admin' && quote.status === 'draft') {
+      return NextResponse.json({ message: 'Forbidden: This quote is still in draft' }, { status: 403 });
+    }
+
     // Fetch associated request and client details
     const [request] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
     if (!request) {

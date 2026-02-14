@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { services, servicePricing } from '@/db/schema'; // Add servicePricing
+import { services } from '@/db/schema';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { desc, eq } from 'drizzle-orm'; // Ensure eq is imported
+import { desc } from 'drizzle-orm';
 
 const serviceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
+  price: z.coerce.number().min(0, 'Price must be positive'),
+  pricingType: z.enum(['hourly', 'flat']),
+  internalCost: z.coerce.number().optional(),
+  margin: z.coerce.number().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -21,19 +25,8 @@ export async function GET(req: Request) {
     if (!payload || payload.role !== 'admin') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     const allServices = await db
-      .select({
-        id: services.id,
-        name: services.name,
-        description: services.description,
-        isActive: services.isActive,
-        createdAt: services.createdAt,
-        price: servicePricing.price,
-        pricingType: servicePricing.pricingType,
-        internalCost: servicePricing.internalCost,
-        margin: servicePricing.margin,
-      })
+      .select()
       .from(services)
-      .leftJoin(servicePricing, eq(services.id, servicePricing.serviceId))
       .orderBy(desc(services.createdAt));
 
     return NextResponse.json({ services: allServices }, { status: 200 });
@@ -54,35 +47,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = serviceSchema.parse(body);
 
-    const result = await db.transaction(async (tx) => {
-      // 1. Insert the new service
-      const [newService] = await tx.insert(services).values({
-        name: data.name,
-        description: data.description,
-        isActive: data.isActive ?? true,
-      }).returning();
+    const [newService] = await db.insert(services).values({
+      name: data.name,
+      description: data.description,
+      price: data.price.toFixed(2),
+      pricingType: data.pricingType,
+      internalCost: data.internalCost ? data.internalCost.toFixed(2) : null,
+      margin: data.margin ? data.margin.toFixed(2) : null,
+      isActive: data.isActive ?? true,
+    }).returning();
 
-      if (!newService) {
-        throw new Error('Failed to create service');
-      }
-
-      // 2. Create a default servicePricing record for the new service
-      const [newPricing] = await tx.insert(servicePricing).values({
-        serviceId: newService.id,
-        price: '0.00',
-        pricingType: 'flat', // Default
-        internalCost: '0.00',
-        margin: '0.00',
-      }).returning();
-
-      if (!newPricing) {
-        throw new Error('Failed to create default service pricing');
-      }
-
-      return { ...newService, pricing: newPricing }; // Return combined data
-    });
-
-    return NextResponse.json({ message: 'Service added successfully', service: result }, { status: 201 });
+    return NextResponse.json({ message: 'Service added successfully', service: newService }, { status: 201 });
 
   } catch (error) {
     if (error instanceof z.ZodError) {

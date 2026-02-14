@@ -18,8 +18,10 @@ const quoteItemSchema = z.object({
 });
 
 const saveQuoteSchema = z.object({
-  requestId: z.string().uuid(),
-  quoteItems: z.array(quoteItemSchema).min(1, 'Quote must have at least one item'),
+  requestId: z.string().uuid().optional().nullable(),
+  clientId: z.string().uuid().optional(),
+  projectName: z.string().optional(),
+  quoteItems: z.array(quoteItemSchema),
   netPrice: z.coerce.number().min(0),
   taxRate: z.coerce.number().min(0),
   taxAmount: z.coerce.number().min(0),
@@ -43,6 +45,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       requestId,
+      clientId,
+      projectName,
       quoteItems: newQuoteItems,
       netPrice,
       taxRate,
@@ -53,11 +57,44 @@ export async function POST(req: Request) {
     } = saveQuoteSchema.parse(body);
 
     const result = await db.transaction(async (tx) => {
+      let finalClientId = clientId;
+      let finalProjectName = projectName;
+      let client = null;
+
+      // Logic to resolve Client and Project Name
+      if (requestId) {
+        // Case A: Quote linked to a Request
+        const [request] = await tx.select()
+          .from(requests)
+          .where(eq(requests.id, requestId));
+
+        if (!request) {
+          throw new Error('Request not found');
+        }
+        finalClientId = request.clientId;
+        finalProjectName = request.projectName;
+      } else {
+        // Case B: Standalone Quote
+        if (!finalClientId) throw new Error('Client ID is required for standalone quotes');
+        if (!finalProjectName) finalProjectName = 'Untitled Quote';
+      }
+
+      // Fetch Client Details (needed for email/notifications)
+      if (finalClientId) {
+          [client] = await tx.select().from(users).where(eq(users.id, finalClientId));
+          if (!client) throw new Error('Client not found');
+      } else {
+           throw new Error('Could not determine Client for this quote');
+      }
+
+
       // 1. Insert the new quote
       const [newQuote] = await tx.insert(quotes).values({
-        requestId,
+        requestId: requestId || null,
+        clientId: finalClientId,
+        projectName: finalProjectName,
         netPrice: netPrice.toFixed(2),
-        taxRate: taxRate.toFixed(4), // Store with higher precision for percentage
+        taxRate: taxRate.toFixed(4), 
         taxAmount: taxAmount.toFixed(2),
         deliveryFee: deliveryFee.toFixed(2),
         totalPrice: totalPrice.toFixed(2),
@@ -66,23 +103,6 @@ export async function POST(req: Request) {
 
       if (!newQuote) {
         throw new Error('Failed to create quote');
-      }
-
-      // Fetch request and client details
-      const [request] = await tx.select()
-        .from(requests)
-        .where(eq(requests.id, requestId));
-
-      if (!request) {
-        throw new Error('Request not found');
-      }
-
-      const [client] = await tx.select()
-        .from(users)
-        .where(eq(users.id, request.clientId)); // Assuming requests table has clientId
-
-      if (!client) {
-        throw new Error('Client not found');
       }
 
       // 2. Insert quote items
@@ -99,29 +119,33 @@ export async function POST(req: Request) {
         await tx.insert(quoteItems).values(itemsToInsert);
       }
 
-      // 3. Update request status if the quote is "sent"
-      if (status === 'sent') {
+      // 3. Update request status if linked and sent
+      if (status === 'sent' && requestId) {
         await tx.update(requests)
           .set({ status: 'quoted' })
           .where(eq(requests.id, requestId));
+      }
 
-        // Attempt to send email notification to client
-        // Add to your .env.local file:
-        // NEXT_PUBLIC_CLIENT_PORTAL_BASE_URL=http://localhost:3000 (or your production domain)
+      // 4. Send Email & Notifications (if sent)
+      if (status === 'sent') {
+        
+        // Construct link (Request-based or Quote-based view)
+        // Ideally, client portal should support /client/quotes/[quoteId] for standalone
+        // For now, if requestId exists, use that. If not, use quoteId (assuming you'll build that page)
+        const baseUrl = process.env.NEXT_PUBLIC_CLIENT_PORTAL_BASE_URL;
+        const quoteLink = requestId 
+            ? `${baseUrl}/client/requests/${requestId}` 
+            : `${baseUrl}/client/quotes/${newQuote.id}`;
 
-        // Construct dynamic template data
         const currentYear = new Date().getFullYear();
-        // Assuming your client quote viewing page is /client/requests/[requestId]
-        // You might need to adjust this URL based on your actual client portal routing
-        const quoteLink = `${process.env.NEXT_PUBLIC_CLIENT_PORTAL_BASE_URL}/client/requests/${newQuote.requestId}`;
 
         const dynamicTemplateData = {
-          first_name: client.name.split(' ')[0], // Assuming first name
+          first_name: client.name.split(' ')[0], 
           quote_link: quoteLink,
-          company_phone: '443-641-4853', // IMPORTANT: Update with actual company phone in .env.local or hardcode
-          company_email: process.env.SENDGRID_FROM_EMAIL, // Assuming company email is the sender email
+          company_phone: '443-641-4853', 
+          company_email: process.env.SENDGRID_FROM_EMAIL,
           current_year: currentYear,
-          project_name: request.projectName,
+          project_name: finalProjectName,
           quote_id: newQuote.id,
           total_price: totalPrice.toFixed(2),
         };
@@ -130,31 +154,25 @@ export async function POST(req: Request) {
           const msg = {
             to: client.email,
             from: process.env.SENDGRID_FROM_EMAIL as string,
-            templateId: 'd-c0b8c78eb6e1417bad4397ae4c7f6b4f', // YOUR TEMPLATE ID
+            templateId: 'd-c0b8c78eb6e1417bad4397ae4c7f6b4f', 
             dynamicTemplateData: dynamicTemplateData,
           };
           await sgMail.send(msg);
-          console.log(`Email notification sent to ${client.email} for quote ${newQuote.id} using template.`);
+          console.log(`Email notification sent to ${client.email} for quote ${newQuote.id}.`);
         } catch (emailError: any) {
-          console.error(`Failed to send email notification for quote ${newQuote.id} to ${client.email} using template:`, emailError.response?.body || emailError.message);
-          // Log the error but do not rethrow, as quote submission should not fail due to email
+          console.error(`Failed to send email notification:`, emailError.message);
         }
 
-        // Create in-app notification for the client
+        // In-app notification
         try {
-          // Ensure NEXT_PUBLIC_CLIENT_PORTAL_BASE_URL is set in .env.local
-          const portalQuoteLink = `${process.env.NEXT_PUBLIC_CLIENT_PORTAL_BASE_URL}/client/requests/${newQuote.requestId}`;
           await tx.insert(notifications).values({
             userId: client.id,
-            message: `A new quote has been sent for your project "${request.projectName}".`,
-            link: portalQuoteLink,
+            message: `A new quote has been sent for your project "${finalProjectName}".`,
+            link: quoteLink,
             isRead: false,
           });
-          console.log(`In-app notification created for client ${client.id} for quote ${newQuote.id}`);
         } catch (notificationError) {
-          console.error(`Failed to create in-app notification for quote ${newQuote.id} for client ${client.id}:`, notificationError);
-          // Log the error but do not rethrow, as quote submission should not fail due to notification
-        }
+          console.error(`Failed to create in-app notification:`, notificationError);
         }
       }
 
@@ -163,11 +181,63 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: 'Quote saved successfully', quote: result }, { status: 201 });
 
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
     }
     console.error('Save quote error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(
+  req: Request,
+  { params }: { params: { quoteId: string } }
+) {
+  try {
+    const { quoteId } = params;
+
+    const token = (await cookies()).get('auth_token')?.value;
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+    if (!payload || payload.role !== 'admin') {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    const [quote] = await db.select().from(quotes).where(eq(quotes.id, quoteId));
+
+    if (!quote) {
+      return NextResponse.json({ message: 'Quote not found' }, { status: 404 });
+    }
+
+    const items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
+
+    // Fetch client and request details if available
+    let client = null;
+    if (quote.clientId) {
+        [client] = await db.select().from(users).where(eq(users.id, quote.clientId));
+    }
+
+    let request = null;
+    if (quote.requestId) {
+        [request] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
+    }
+
+    return NextResponse.json({
+      quote: {
+        ...quote,
+        quoteItems: items,
+        client: client || null,
+        request: request || null,
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error fetching quote by ID:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

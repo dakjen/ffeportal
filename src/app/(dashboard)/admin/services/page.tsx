@@ -101,7 +101,7 @@ export default function AdminServicesPage() {
     <div className="space-y-8 bg-gray-50 min-h-screen p-6">
       <div>
         <h1 className="text-3xl font-bold text-[var(--brand-black)]">Services & Pricing</h1>
-        <p className="text-gray-500 mt-1">Manage your service catalog and internal costs.</p>
+        <p className="text-gray-500 mt-1">Manage your service catalog.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -180,16 +180,17 @@ export default function AdminServicesPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700">Price ($)</label>
-                                        <input
-                                          type="number"
-                                          step="0.01"
-                                          {...register('price')}
-                                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
-                                        />
-                                        {errors.price && <p className="text-red-600 text-xs mt-1">{errors.price.message}</p>}
-                                      </div>              <div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Price ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('price')}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
+                />
+                {errors.price && <p className="text-red-600 text-xs mt-1">{errors.price.message}</p>}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Type</label>
                 <select
                   {...register('pricingType')}
@@ -201,28 +202,7 @@ export default function AdminServicesPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Internal Pricing</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Cost ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register('internalCost')}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
-                  />
-                </div>
-                  <label className="block text-sm font-medium text-gray-700">Margin (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    {...register('margin')}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
-                  />
-                </div>
-              </div>
-            </div>
+
 
             {error && <p className="text-red-600 text-sm">{error}</p>}
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, LayoutDashboard, ClipboardList, Users, Plus, DollarSign, Settings } from 'lucide-react'; // Added Settings icon
+import { LogOut, LayoutDashboard, ClipboardList, Users, Plus, DollarSign, Settings, FileText } from 'lucide-react'; // Added Settings icon
 
 export default function DashboardLayout({
   children,
@@ -48,6 +48,9 @@ export default function DashboardLayout({
                 <Link href="/admin/requests" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/admin/requests') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <ClipboardList className="h-4 w-4" /> Requests
                 </Link>
+                <Link href="/admin/quotes" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/admin/quotes') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
+                  <FileText className="h-4 w-4" /> Quotes
+                </Link>
                 <Link href="/admin/invoices" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <DollarSign className="h-4 w-4" /> Invoices
                 </Link>
@@ -80,7 +83,10 @@ export default function DashboardLayout({
             {isClient && (
               <>
                 <Link href="/client/dashboard" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/dashboard' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
-                  <LayoutDashboard className="h-4 w-4" /> My Projects
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </Link>
+                <Link href="/client/current-projects" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/current-projects' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
+                  <ClipboardList className="h-4 w-4" /> Current Projects
                 </Link>
                 <Link href="/client/new-request" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/new-request' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Plus className="h-4 w-4" /> New Request

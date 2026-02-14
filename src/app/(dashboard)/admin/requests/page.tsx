@@ -69,10 +69,9 @@ export default async function AdminRequestsPage() {
                   </td>
                   <td className="py-3 px-4 text-gray-600">{new Date(req.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-right">
-                    <Link href={`/admin/requests/${req.id}/quote`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
-                      Create Quote
+                    <Link href={`/admin/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
+                      Manage
                     </Link>
-                    {/* Add other actions like View Details later */}
                   </td>
                 </tr>
               ))}

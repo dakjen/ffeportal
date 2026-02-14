@@ -8,13 +8,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-const createProjectSchema = z.object({
+const createQuoteSchema = z.object({
   projectName: z.string().min(1, 'Project Name is required'),
   clientId: z.string().min(1, 'Client is required'),
-  description: z.string().optional(),
+  // description is not directly on quote, so remove from here
 });
 
-type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
+type CreateQuoteFormValues = z.infer<typeof createQuoteSchema>;
 
 interface QuickActionsProps {
   pendingCount: number;
@@ -32,28 +32,38 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateProjectFormValues>({
-    resolver: zodResolver(createProjectSchema),
+  } = useForm<CreateQuoteFormValues>({
+    resolver: zodResolver(createQuoteSchema),
   });
 
-  const onSubmit = async (data: CreateProjectFormValues) => {
+  const onSubmit = async (data: CreateQuoteFormValues) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/requests', {
+      const res = await fetch('/api/admin/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          clientId: data.clientId,
+          projectName: data.projectName,
+          quoteItems: [], // Initialize with empty array
+          netPrice: 0,
+          taxRate: 0,
+          taxAmount: 0,
+          deliveryFee: 0,
+          totalPrice: 0,
+          status: 'draft',
+        }),
       });
 
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.message || 'Failed to create project');
+        throw new Error(result.message || 'Failed to create quote');
       }
 
-      // Redirect immediately to the quote builder for this new request
-      router.push(`/admin/requests/${result.request.id}/quote`);
+      // Redirect to the new standalone quote editor
+      router.push(`/admin/quotes/${result.quote.id}`);
       
     } catch (err: any) {
       setError(err.message);
@@ -100,19 +110,18 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
         </div>
       </div>
 
-      {/* Create Project Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-[var(--brand-black)]">Start New Quote</h2>
+              <h2 className="text-xl font-bold text-[var(--brand-black)]">Create New Quote</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
             
             <p className="text-sm text-gray-500 mb-6">
-              Create a project container to start building a quote.
+              Create a new quote directly.
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -142,14 +151,7 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
                 {errors.clientId && <p className="text-red-600 text-xs mt-1">{errors.clientId.message}</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description (Optional)</label>
-                <textarea
-                  {...register('description')}
-                  rows={2}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
-                />
-              </div>
+              {/* Description removed as it's not a direct field on quotes */}
 
               {error && <p className="text-red-600 text-sm">{error}</p>}
 
@@ -166,7 +168,7 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
                   disabled={loading}
                   className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[var(--brand-red)] hover:bg-[#5a0404] disabled:opacity-70"
                 >
-                  {loading ? 'Creating...' : 'Create & Build Quote'}
+                  {loading ? 'Creating...' : 'Create Quote & Edit'}
                 </button>
               </div>
             </form>
