@@ -62,7 +62,7 @@ export default function NewInvoicePage() {
             <label className="block text-sm font-medium text-gray-700">Project Name</label>
             <input
               {...register('projectName')}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] text-gray-900 placeholder-gray-500"
               placeholder="e.g. Office Renovation - Electrical"
             />
             {errors.projectName && <p className="text-red-600 text-xs mt-1">{errors.projectName.message}</p>}
@@ -73,7 +73,7 @@ export default function NewInvoicePage() {
             <textarea
               {...register('description')}
               rows={3}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] text-gray-900 placeholder-gray-500"
               placeholder="Details of work or materials..."
             />
             {errors.description && <p className="text-red-600 text-xs mt-1">{errors.description.message}</p>}
@@ -85,7 +85,7 @@ export default function NewInvoicePage() {
               type="number"
               step="0.01"
               {...register('amount')}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] text-gray-900 placeholder-gray-500"
             />
             {errors.amount && <p className="text-red-600 text-xs mt-1">{errors.amount.message}</p>}
           </div>

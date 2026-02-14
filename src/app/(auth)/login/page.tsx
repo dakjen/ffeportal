@@ -25,14 +25,13 @@ export default function LoginPage() {
             });
     
             if (!response.ok) {
-              const data = await response.json(); // Only parse JSON for error responses
+              const data = await response.json();
               setError(data.message || 'Login failed');
               return;
             }
     
-            // If response is ok, the server has already issued a redirect.
-            // No further client-side action is needed here, as the browser will follow the redirect.
-            return;
+            const data = await response.json(); // Parse JSON for successful responses too
+            router.push(data.redirectUrl); // Client-side navigation
     
           } catch (err) {
             setError('An unexpected error occurred.');

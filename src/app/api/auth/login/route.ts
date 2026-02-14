@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
+    console.log(`Login successful for user: ${user.email}, detected role: ${user.role}`);
 
     const token = await createToken({ id: user.id, email: user.email, role: user.role });
 
@@ -39,7 +40,8 @@ export async function POST(req: Request) {
       redirectUrl = '/contractor/dashboard';
     }
 
-    return NextResponse.redirect(new URL(redirectUrl, req.url));
+    // Return the redirectUrl as JSON for client-side navigation
+    return NextResponse.json({ message: 'Login successful', redirectUrl }, { status: 200 });
 
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -22,7 +22,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 // JWT Token Management
-interface UserPayload {
+export interface UserPayload {
   id: string;
   email: string;
   role: 'admin' | 'client' | 'contractor';
