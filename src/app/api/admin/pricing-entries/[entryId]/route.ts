@@ -60,7 +60,7 @@ export async function PUT(
     const payload = await verifyToken(token);
     if (!payload || payload.role !== 'admin') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
-    const body = await req.json();
+    const body = await request.json();
     const data = updatePricingEntrySchema.parse(body);
 
     const updateData: any = {};
@@ -88,7 +88,7 @@ export async function PUT(
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validation error', errors: error.issues }, { status: 400 });
     }
     console.error('Error updating pricing entry:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

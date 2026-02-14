@@ -104,7 +104,7 @@ export async function PUT(
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        const body = await req.json();
+        const body = await request.json();
         // Convert empty string clientId to null for nullable Zod schema
         if (body.clientId === '') {
             body.clientId = null;
@@ -175,7 +175,7 @@ export async function PUT(
                     deliveryFee: deliveryFee.toFixed(2),
                     totalPrice: totalPrice.toFixed(2),
                     status: status,
-                    updatedAt: new Date(), // Assuming you have an updatedAt column
+
                 })
                 .where(eq(quotes.id, quoteId))
                 .returning();
@@ -260,7 +260,7 @@ export async function PUT(
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
+            return NextResponse.json({ message: 'Validation error', errors: error.issues }, { status: 400 });
         }
         console.error('Update quote error:', error);
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

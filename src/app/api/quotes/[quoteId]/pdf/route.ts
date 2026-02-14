@@ -39,19 +39,33 @@ export async function GET(
       return NextResponse.json({ message: 'Forbidden: This quote is still in draft' }, { status: 403 });
     }
 
-    // Fetch associated request and client details
-    const [request] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
-    if (!request) {
-      return NextResponse.json({ message: 'Request not found for quote' }, { status: 404 });
+    let requestData = null;
+    if (quote.requestId) {
+      const [fetchedRequest] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
+      if (!fetchedRequest) {
+        return NextResponse.json({ message: 'Linked request not found' }, { status: 404 });
+      }
+      requestData = fetchedRequest;
     }
 
-    const [client] = await db.select().from(users).where(eq(users.id, request.clientId));
-    if (!client) {
-      return NextResponse.json({ message: 'Client not found for request' }, { status: 404 });
+    let clientData = null;
+    if (requestData && requestData.clientId) {
+      const [fetchedClient] = await db.select().from(users).where(eq(users.id, requestData.clientId));
+      if (!fetchedClient) {
+        return NextResponse.json({ message: 'Client not found for linked request' }, { status: 404 });
+      }
+      clientData = fetchedClient;
+    } else if (quote.clientId) {
+      const [fetchedClient] = await db.select().from(users).where(eq(users.id, quote.clientId));
+      if (!fetchedClient) {
+        return NextResponse.json({ message: 'Client not found for standalone quote' }, { status: 404 });
+      }
+      clientData = fetchedClient;
     }
 
     // Authorization check: Only admin or the client who owns the quote can download
-    if (userRole !== 'admin' && userId !== client.id) {
+    // This now relies on clientData possibly being null if it's a quote not linked to any client directly.
+    if (userRole !== 'admin' && (!clientData || userId !== clientData.id)) {
       return NextResponse.json({ message: 'Forbidden: You do not have access to this quote' }, { status: 403 });
     }
 
@@ -61,16 +75,20 @@ export async function GET(
     // Prepare data for PDF generation
     const quoteDetails = {
       id: quote.id,
-      totalPrice: parseFloat(quote.totalPrice), // Ensure number type
+      totalPrice: parseFloat(quote.totalPrice || '0'), // Ensure number type
+      netPrice: parseFloat(quote.netPrice || '0'),
+      taxRate: parseFloat(quote.taxRate || '0'),
+      taxAmount: parseFloat(quote.taxAmount || '0'),
+      deliveryFee: parseFloat(quote.deliveryFee || '0'),
       status: quote.status,
-      projectName: request.projectName,
-      clientName: client.name,
-      clientCompanyName: client.companyName || undefined,
+      projectName: requestData?.projectName || quote.projectName || 'Untitled Project',
+      clientName: clientData?.name || 'N/A',
+      clientCompanyName: clientData?.companyName || undefined,
       items: quoteItemsData.map(item => ({
         serviceName: item.serviceName,
         description: item.description || undefined,
         price: parseFloat(item.price), // Ensure number type
-        unitPrice: parseFloat(item.unitPrice), // Ensure number type
+        unitPrice: parseFloat(item.unitPrice || '0'), // Ensure number type
         quantity: parseFloat(item.quantity), // Ensure number type
       })),
     };
@@ -79,7 +97,7 @@ export async function GET(
     const pdfBuffer = await generateQuotePdf(quoteDetails);
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="quote-${quoteId}.pdf"`,

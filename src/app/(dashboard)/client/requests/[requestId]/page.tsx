@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import Link from 'next/link';
-import { Download, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft, Clock } from 'lucide-react';
 
 export default async function ClientQuoteViewPage({ params }: { params: { requestId: string } }) {
   const { requestId } = params;
@@ -102,13 +102,13 @@ export default async function ClientQuoteViewPage({ params }: { params: { reques
             <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Quote Details</h2>
             <p className="text-gray-700">Status: <span className="font-semibold capitalize">{quote.status}</span></p>
             <p className="text-gray-700">Items Subtotal: <span className="font-semibold">${parseFloat(quote.netPrice).toFixed(2)}</span></p>
-            {parseFloat(quote.taxRate) > 0 && (
-              <p className="text-gray-700">Tax ({(parseFloat(quote.taxRate) * 100).toFixed(2)}%): <span className="font-semibold">${parseFloat(quote.taxAmount).toFixed(2)}</span></p>
+            {parseFloat(quote.taxRate || '0') > 0 && (
+              <p className="text-gray-700">Tax ({(parseFloat(quote.taxRate || '0') * 100).toFixed(2)}%): <span className="font-semibold">${parseFloat(quote.taxAmount || '0').toFixed(2)}</span></p>
             )}
-            {parseFloat(quote.deliveryFee) > 0 && (
-              <p className="text-gray-700">Delivery Fee: <span className="font-semibold">${parseFloat(quote.deliveryFee).toFixed(2)}</span></p>
+            {parseFloat(quote.deliveryFee || '0') > 0 && (
+              <p className="text-gray-700">Delivery Fee: <span className="font-semibold">${parseFloat(quote.deliveryFee || '0').toFixed(2)}</span></p>
             )}
-            <p className="text-gray-700 text-lg font-bold mt-2">Total Quote Price: <span className="font-semibold">${parseFloat(quote.totalPrice).toFixed(2)}</span></p>
+            <p className="text-gray-700 text-lg font-bold mt-2">Total Quote Price: <span className="font-semibold">${parseFloat(quote.totalPrice || '0').toFixed(2)}</span></p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

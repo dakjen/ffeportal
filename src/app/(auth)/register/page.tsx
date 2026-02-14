@@ -6,15 +6,20 @@ import Link from 'next/link';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialRole = searchParams.get('role') || 'client'; // Default to 'client'
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [role, setRole] = useState(initialRole);
+  const [role, setRole] = useState('client'); // Default to 'client', will be updated by useEffect
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const roleFromParams = searchParams.get('role');
+    if (roleFromParams && ['admin', 'client', 'contractor'].includes(roleFromParams)) {
+      setRole(roleFromParams as 'admin' | 'client' | 'contractor');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

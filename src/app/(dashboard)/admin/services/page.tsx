@@ -10,10 +10,10 @@ import { Plus, Trash2, Edit2, DollarSign, Briefcase } from 'lucide-react';
 const serviceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  price: z.coerce.number().min(0, 'Price must be positive'),
+  price: z.number().min(0, 'Price must be positive'),
   pricingType: z.enum(['hourly', 'flat']),
-  internalCost: z.coerce.number().optional(),
-  margin: z.coerce.number().optional(),
+  internalCost: z.number().optional(),
+  margin: z.number().optional(),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;

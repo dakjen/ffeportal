@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validation error', errors: error.issues }, { status: 400 });
     }
     console.error('Submit request error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

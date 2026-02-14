@@ -41,7 +41,7 @@ export async function createToken(payload: UserPayload): Promise<string> {
 
 export async function verifyToken(token: string): Promise<UserPayload> {
   const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
-  return payload as UserPayload;
+  return payload as unknown as UserPayload;
 }
 
 // User fetching by token (for middleware/server components)

@@ -150,7 +150,7 @@ export async function POST(req: Request) {
         const currentYear = new Date().getFullYear();
 
         const dynamicTemplateData = {
-          first_name: client.name.split(' ')[0], 
+          first_name: client!.name.split(' ')[0], 
           quote_link: quoteLink,
           company_phone: '443-641-4853', 
           company_email: process.env.SENDGRID_FROM_EMAIL,
@@ -162,13 +162,13 @@ export async function POST(req: Request) {
 
         try {
           const msg = {
-            to: client.email,
+            to: client!.email,
             from: process.env.SENDGRID_FROM_EMAIL as string,
             templateId: 'd-c0b8c78eb6e1417bad4397ae4c7f6b4f', 
             dynamicTemplateData: dynamicTemplateData,
           };
           await sgMail.send(msg);
-          console.log(`Email notification sent to ${client.email} for quote ${newQuote.id}.`);
+          console.log(`Email notification sent to ${client!.email} for quote ${newQuote.id}.`);
         } catch (emailError: any) {
           console.error(`Failed to send email notification:`, emailError.message);
         }
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
         // In-app notification
         try {
           await tx.insert(notifications).values({
-            userId: client.id,
+            userId: client!.id,
             message: `A new quote has been sent for your project "${finalProjectName}".`,
             link: quoteLink,
             isRead: false,
@@ -194,7 +194,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validation error', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validation error', errors: error.issues }, { status: 400 });
     }
     console.error('Save quote error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

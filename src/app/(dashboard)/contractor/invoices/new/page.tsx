@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 const invoiceSchema = z.object({
   projectName: z.string().min(1, 'Project Name is required'),
   description: z.string().min(1, 'Description is required'),
-  amount: z.coerce.number().min(0.01, 'Amount must be positive'),
+  amount: z.number().min(0.01, 'Amount must be positive'),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;

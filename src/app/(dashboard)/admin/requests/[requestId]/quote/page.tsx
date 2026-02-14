@@ -9,6 +9,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
+import clsx from 'clsx'; // Import clsx
 import { Plus } from 'lucide-react';
 
 // --- Schemas ---
@@ -16,28 +17,42 @@ const quoteItemSchema = z.object({
   id: z.string().optional(),
   serviceName: z.string().min(1, 'Service name is required'),
   description: z.string().optional(),
-  price: z.coerce.number().min(0), // Total Price
-  unitPrice: z.coerce.number().min(0), // Price per unit/hour
-  quantity: z.coerce.number().min(0.1), // Quantity or Hours
+  price: z.number().min(0).optional(), // Changed to z.number().optional()
+  unitPrice: z.number().min(0).optional(), // Changed to z.number().optional()
+  quantity: z.number().min(0.1).optional(), // Changed to z.number().optional()
   pricingType: z.enum(['hourly', 'flat']).optional(),
 });
 
 const quoteFormSchema = z.object({
   quoteItems: z.array(quoteItemSchema),
-  status: z.enum(['draft', 'sent', 'approved', 'revised']).default('draft'),
+  status: z.enum(['draft', 'sent', 'approved', 'revised']), // Removed .default('draft')
 });
 
 type QuoteItem = z.infer<typeof quoteItemSchema>;
-type QuoteFormValues = z.infer<typeof quoteFormSchema>;
+// Explicitly define QuoteFormValues for better type compatibility with useForm
+type QuoteFormValues = {
+  quoteItems: Array<{
+    id?: string;
+    serviceName: string;
+    description?: string;
+    price?: number;
+    unitPrice?: number;
+    quantity?: number;
+    pricingType?: 'hourly' | 'flat';
+  }>;
+  status: 'draft' | 'sent' | 'approved' | 'revised';
+};
+
 
 // --- Sortable Item Component ---
 interface SortableItemProps {
   item: QuoteItem;
   onRemove: (id: string) => void;
   onUpdate: (id: string, field: keyof QuoteItem, value: any) => void;
+  isEditable: boolean;
 }
 
-function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
+function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -53,12 +68,12 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
 
   const handleQuantityChange = (qty: number) => {
     onUpdate(item.id!, 'quantity', qty);
-    onUpdate(item.id!, 'price', qty * item.unitPrice);
+    onUpdate(item.id!, 'price', qty * (item.unitPrice || 0)); // Add || 0
   };
 
   const handleUnitPriceChange = (price: number) => {
     onUpdate(item.id!, 'unitPrice', price);
-    onUpdate(item.id!, 'price', item.quantity * price);
+    onUpdate(item.id!, 'price', (item.quantity || 0) * price); // Add || 0
   };
 
   return (
@@ -67,9 +82,9 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
       style={style}
       className="flex flex-col p-4 border rounded-md bg-white shadow-sm mb-2 gap-3"
     >
-      <div className="flex items-center justify-between cursor-move" {...attributes} {...listeners}>
+      <div className={clsx("flex items-center justify-between", isEditable && "cursor-move")} {...(isEditable ? { ...attributes, ...listeners } : {})}>
         <div className="flex items-center gap-2">
-          {item.id?.startsWith('custom-') ? (
+          {item.id?.startsWith('custom-') && isEditable ? (
             <input
               type="text"
               value={item.serviceName}
@@ -86,50 +101,64 @@ function SortableItem({ item, onRemove, onUpdate }: SortableItemProps) {
             </span>
           )}
         </div>
-        <button type="button" onClick={() => onRemove(item.id!)} className="text-red-500 hover:text-red-700 text-xs font-medium">
-          Remove
-        </button>
+        {isEditable && (
+          <button type="button" onClick={() => onRemove(item.id!)} className="text-red-500 hover:text-red-700 text-xs font-medium">
+            Remove
+          </button>
+        )}
       </div>
       
       <div className="flex flex-col gap-2">
-        <textarea
-          value={item.description || ''}
-          onChange={(e) => onUpdate(item.id!, 'description', e.target.value)}
-          placeholder="Description"
-          className="w-full text-sm text-gray-600 resize-none border border-gray-200 rounded p-2 focus:outline-none focus:border-[var(--brand-red)]"
-          rows={2}
-        />
+        {isEditable ? (
+          <textarea
+            value={item.description || ''}
+            onChange={(e) => onUpdate(item.id!, 'description', e.target.value)}
+            placeholder="Description"
+            className="w-full text-sm text-gray-600 resize-none border border-gray-200 rounded p-2 focus:outline-none focus:border-[var(--brand-red)]"
+            rows={2}
+          />
+        ) : (
+          <p className="text-sm text-gray-600">{item.description || '-'}</p>
+        )}
         
         <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="text-xs text-gray-500 font-medium block mb-1">
               {item.pricingType === 'hourly' ? 'Hours' : 'Quantity'}
             </label>
-            <input
-              type="number"
-              min="0.1"
-              step="0.1"
-              value={item.quantity}
-              onChange={(e) => handleQuantityChange(parseFloat(e.target.value) || 0)}
-              className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
-            />
+            {isEditable ? (
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={item.quantity}
+                onChange={(e) => handleQuantityChange(parseFloat(e.target.value) || 0)}
+                className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
+              />
+            ) : (
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">{(item.quantity || 0).toFixed(2)}</p>
+            )}
           </div>
           <div className="flex-1">
             <label className="text-xs text-gray-500 font-medium block mb-1">
               Unit Price ($)
             </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={item.unitPrice}
-              onChange={(e) => handleUnitPriceChange(parseFloat(e.target.value) || 0)}
-              className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
-            />
+            {isEditable ? (
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.unitPrice}
+                onChange={(e) => handleUnitPriceChange(parseFloat(e.target.value) || 0)}
+                className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
+              />
+            ) : (
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">${(item.unitPrice || 0).toFixed(2)}</p>
+            )}
           </div>
           <div className="flex-1 text-right pb-2">
             <span className="text-xs text-gray-500 block">Total</span>
-            <span className="font-bold text-[var(--brand-black)]">${item.price.toFixed(2)}</span>
+            <span className="font-bold text-[var(--brand-black)]">${(item.price || 0).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -146,21 +175,22 @@ export default function QuoteBuilderPage() {
     id: string;
     projectName: string;
     clientName: string;
-    clientCompanyName?: string; // Add clientCompanyName
+    clientCompanyName?: string;
     currentQuoteId?: string;
     currentQuoteStatus?: string;
-    // Add other request fields as needed by the UI
   }
 
-  const [request, setRequest] = useState<RequestWithQuoteInfo | null>(null); // Update type
+  const [request, setRequest] = useState<RequestWithQuoteInfo | null>(null);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingQuote, setSavingQuote] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedQuoteItems, setSelectedQuoteItems] = useState<QuoteItem[]>([]);
-  const [taxRate, setTaxRate] = useState<number>(0); // State for tax rate percentage (e.g., 0.05 for 5%)
-  const [deliveryFee, setDeliveryFee] = useState<number>(0); // State for flat delivery fee
+  const [taxRate, setTaxRate] = useState<number>(0);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+
+  const isQuoteEditable = request?.currentQuoteStatus === 'draft';
 
   // Form handling
   const { handleSubmit, setValue } = useForm<QuoteFormValues>({
@@ -168,7 +198,7 @@ export default function QuoteBuilderPage() {
     defaultValues: {
       quoteItems: [],
       status: 'draft',
-    },
+    } as QuoteFormValues, // Explicit cast
   });
 
   // Fetch request details and services
@@ -186,18 +216,10 @@ export default function QuoteBuilderPage() {
         const reqData = await reqRes.json();
         const servicesData = await servicesRes.json();
 
-        // Fetch current quote data to get its ID and status - This API call was incorrect and is now removed.
-        // It was making a GET request to /api/admin/quotes/[requestId] which expected a quoteId.
-        // The fetchExistingQuote useEffect handles fetching the actual quote.
-        let currentQuoteId: string | undefined;
-        let currentQuoteStatus: string | undefined;
-        // The logic for populating currentQuoteId and currentQuoteStatus will now be handled
-        // by the fetchExistingQuote useEffect once the quote is successfully loaded.
-
         setRequest({
           ...reqData.request,
-          currentQuoteId,
-          currentQuoteStatus,
+          currentQuoteId: reqData.quote?.id, // Get quote id from requestData if it exists
+          currentQuoteStatus: reqData.quote?.status, // Get quote status from requestData if it exists
         });
         setAvailableServices(servicesData.services);
       } catch (err: any) {
@@ -207,9 +229,8 @@ export default function QuoteBuilderPage() {
       }
     }
     fetchData();
-  }, [requestId]);
+  }, [requestId, setValue]);
 
-  // Update form with selected quote items
   useEffect(() => {
     setValue('quoteItems', selectedQuoteItems);
   }, [selectedQuoteItems, setValue]);
@@ -218,40 +239,38 @@ export default function QuoteBuilderPage() {
   useEffect(() => {
     async function fetchExistingQuote() {
       try {
-        const response = await fetch(`/api/admin/requests/${requestId}/quote`); // Calls the new API route
+        const response = await fetch(`/api/admin/requests/${requestId}/quote`);
         if (response.ok) {
           const data = await response.json();
           if (data.quote) {
             setSelectedQuoteItems(data.quote.quoteItems.map((item: any) => ({
               ...item,
-              price: parseFloat(item.price),
-              unitPrice: parseFloat(item.unitPrice),
-              quantity: parseFloat(item.quantity),
+              price: parseFloat(item.price || '0'), // Add || '0'
+              unitPrice: parseFloat(item.unitPrice || '0'), // Add || '0'
+              quantity: parseFloat(item.quantity || '0'), // Add || '0'
             })));
-            setTaxRate(parseFloat(data.quote.taxRate));
-            setDeliveryFee(parseFloat(data.quote.deliveryFee));
-            // Ensure values are numbers before setting state
-            setTaxRate(data.quote.taxRate ? parseFloat(data.quote.taxRate) : 0);
-            setDeliveryFee(data.quote.deliveryFee ? parseFloat(data.quote.deliveryFee) : 0);
-            setValue('status', data.quote.status); // Set status if loading draft
+            setTaxRate(parseFloat(data.quote.taxRate || '0')); // Add || '0'
+            setDeliveryFee(parseFloat(data.quote.deliveryFee || '0')); // Add || '0'
+            // Ensure values are numbers before setting state (redundant after above, but harmless)
+            // setTaxRate(data.quote.taxRate ? parseFloat(data.quote.taxRate) : 0);
+            // setDeliveryFee(data.quote.deliveryFee ? parseFloat(data.quote.deliveryFee) : 0);
+            setValue('status', data.quote.status);
           }
         } else if (response.status === 404) {
-          // No existing quote, which is fine for a new quote being built
           console.log('No existing draft quote found for this request. Starting fresh.');
         } else {
           throw new Error(`Failed to fetch existing quote: ${response.statusText}`);
         }
       } catch (err: any) {
         console.error('Failed to fetch existing quote:', err.message);
-        setError(prev => prev ? prev + "\n" + err.message : err.message); // Append error
+        setError(prev => prev ? prev + "\n" + err.message : err.message);
       }
     }
     fetchExistingQuote();
-  }, [requestId, setValue]); // Dependency on requestId and setValue, ensuring setValue stability
+  }, [requestId, setValue]);
 
-  // Calculate net total, tax amount, and final total
   const { netPrice, taxAmount, finalTotalPrice } = useMemo(() => {
-    const calculatedNetPrice = selectedQuoteItems.reduce((sum, item) => sum + item.price, 0);
+    const calculatedNetPrice = selectedQuoteItems.reduce((sum, item) => sum + (item.price || 0), 0);
     const calculatedTaxAmount = calculatedNetPrice * taxRate;
     const calculatedFinalTotalPrice = calculatedNetPrice + calculatedTaxAmount + deliveryFee;
     return {
@@ -261,7 +280,6 @@ export default function QuoteBuilderPage() {
     };
   }, [selectedQuoteItems, taxRate, deliveryFee]);
 
-  // DND Handlers
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -287,7 +305,7 @@ export default function QuoteBuilderPage() {
 
   function handleAddService(service: any) {
     const newId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const unitPrice = parseFloat(service.price);
+    const unitPrice = parseFloat(service.price || '0'); // Add || '0'
     const quantity = 1;
     
     const newItem: QuoteItem = {
@@ -326,11 +344,11 @@ export default function QuoteBuilderPage() {
           requestId: requestId,
           quoteItems: selectedQuoteItems,
           status: values.status,
-          netPrice: netPrice, // Add netPrice
-          taxRate: taxRate, // Add taxRate
-          taxAmount: taxAmount, // Add taxAmount
-          deliveryFee: deliveryFee, // Add deliveryFee
-          totalPrice: finalTotalPrice, // Use finalTotalPrice
+          netPrice: netPrice,
+          taxRate: taxRate,
+          taxAmount: taxAmount,
+          deliveryFee: deliveryFee,
+          totalPrice: finalTotalPrice,
         }),
       });
 
@@ -352,23 +370,22 @@ export default function QuoteBuilderPage() {
     const newId = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newItem: QuoteItem = {
       id: newId,
-      serviceName: 'Custom Service', // Default name
+      serviceName: 'Custom Service',
       description: '',
       unitPrice: 0,
       quantity: 1,
       price: 0,
-      pricingType: 'flat', // Default type
+      pricingType: 'flat',
     };
     setSelectedQuoteItems((prev) => [...prev, newItem]);
   }
 
   const handleDeleteQuote = async () => {
-    // Assuming request.currentQuoteId is available
     if (!request || !request.currentQuoteId || !confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
       return;
     }
 
-    setSavingQuote(true); // Reusing savingQuote state for any mutation
+    setSavingQuote(true);
     setError(null);
     try {
       const response = await fetch(`/api/admin/quotes/${request.currentQuoteId}`, {
@@ -383,7 +400,7 @@ export default function QuoteBuilderPage() {
         throw new Error(errorData.message || 'Failed to delete quote');
       }
 
-      router.push(`/admin/requests`); // Redirect after successful deletion
+      router.push(`/admin/requests`);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred while deleting the quote.');
     } finally {
@@ -455,7 +472,7 @@ export default function QuoteBuilderPage() {
           </div>
           <button
             type="button"
-            onClick={handleAddCustomItem}
+            onClick={() => handleAddCustomItem()} // Changed to arrow function
             className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
           >
             <Plus className="h-4 w-4" /> Add Custom Item
@@ -480,6 +497,7 @@ export default function QuoteBuilderPage() {
                       item={item}
                       onRemove={handleRemoveService}
                       onUpdate={handleUpdateServiceItem}
+                      isEditable={isQuoteEditable}
                     />
                   ))
                 )}
