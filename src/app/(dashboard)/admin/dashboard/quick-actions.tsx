@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const createQuoteSchema = z.object({
   projectName: z.string().min(1, 'Quote Name is required'),
-  clientId: z.string().min(1, 'Client is required'),
+  clientId: z.string().uuid('Client is required').nullable(),
   notes: z.string().optional(),
 });
 
@@ -18,7 +18,7 @@ type CreateQuoteFormValues = z.infer<typeof createQuoteSchema>;
 
 interface QuickActionsProps {
   pendingCount: number;
-  clients: { id: string; name: string; email: string; companyName: string }[];
+  clients: { id: string; name: string; email: string; companyName: string | null }[];
 }
 
 export default function QuickActions({ pendingCount, clients }: QuickActionsProps) {

@@ -9,6 +9,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
+import clsx from 'clsx';
 import { Plus } from 'lucide-react';
 
 // --- Schemas ---
@@ -16,19 +17,31 @@ const quoteItemSchema = z.object({
   id: z.string().optional(),
   serviceName: z.string().min(1, 'Service name is required'),
   description: z.string().optional(),
-  price: z.coerce.number().min(0), // Total Price
-  unitPrice: z.coerce.number().min(0), // Price per unit/hour
-  quantity: z.coerce.number().min(0.1), // Quantity or Hours
+  price: z.number().min(0).optional(), // Total Price
+  unitPrice: z.number().min(0).optional(), // Price per unit/hour
+  quantity: z.number().min(0.1).optional(), // Quantity or Hours
   pricingType: z.enum(['hourly', 'flat']).optional(),
 });
 
 const quoteFormSchema = z.object({
   quoteItems: z.array(quoteItemSchema),
-  status: z.enum(['draft', 'sent', 'approved', 'revised']).default('draft'),
+  status: z.enum(['draft', 'sent', 'approved', 'revised']),
 });
 
-type QuoteItem = z.infer<typeof quoteItemSchema>;
-type QuoteFormValues = z.infer<typeof quoteFormSchema>;
+type QuoteItem = z.infer<typeof quoteItemSchema>; // Keep this for individual item type
+
+type QuoteFormValues = {
+  quoteItems: Array<{
+    id?: string;
+    serviceName: string;
+    description?: string;
+    price?: number;
+    unitPrice?: number;
+    quantity?: number;
+    pricingType?: 'hourly' | 'flat';
+  }>;
+  status: 'draft' | 'sent' | 'approved' | 'revised';
+};
 
 // --- Sortable Item Component ---
 interface SortableItemProps {
@@ -54,12 +67,12 @@ function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProp
 
   const handleQuantityChange = (qty: number) => {
     onUpdate(item.id!, 'quantity', qty);
-    onUpdate(item.id!, 'price', qty * item.unitPrice);
+    onUpdate(item.id!, 'price', qty * (item.unitPrice || 0));
   };
 
   const handleUnitPriceChange = (price: number) => {
     onUpdate(item.id!, 'unitPrice', price);
-    onUpdate(item.id!, 'price', item.quantity * price);
+    onUpdate(item.id!, 'price', (item.quantity || 0) * price);
   };
 
   return (
@@ -68,7 +81,7 @@ function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProp
       style={style}
       className="flex flex-col p-4 border rounded-md bg-white shadow-sm mb-2 gap-3"
     >
-      <div className="flex items-center justify-between" {...(isEditable ? { ...attributes, ...listeners, className: "cursor-move" } : {})}>
+      <div className={clsx("flex items-center justify-between", isEditable && "cursor-move")} {...(isEditable ? { ...attributes, ...listeners } : {})}>
         <div className="flex items-center gap-2">
           {item.id?.startsWith('custom-') && isEditable ? (
             <input
@@ -122,7 +135,7 @@ function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProp
                 className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
               />
             ) : (
-              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">{item.quantity.toFixed(2)}</p>
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">{(item.quantity || 0).toFixed(2)}</p>
             )}
           </div>
           <div className="flex-1">
@@ -139,12 +152,12 @@ function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProp
                 className="w-full text-sm p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)]"
               />
             ) : (
-              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">${item.unitPrice.toFixed(2)}</p>
+              <p className="w-full text-sm p-1.5 text-[var(--brand-black)]">${(item.unitPrice || 0).toFixed(2)}</p>
             )}
           </div>
           <div className="flex-1 text-right pb-2">
             <span className="text-xs text-gray-500 block">Total</span>
-            <span className="font-bold text-[var(--brand-black)]">${item.price.toFixed(2)}</span>
+            <span className="font-bold text-[var(--brand-black)]">${(item.price || 0).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -160,12 +173,14 @@ export default function QuoteEditorPage() {
   interface QuoteData {
     id: string;
     projectName: string;
+    notes?: string;
     clientName: string;
     status: string;
     taxRate: string;
     deliveryFee: string;
     quoteItems: any[];
     requestId?: string;
+    clientId?: string;
   }
 
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -183,7 +198,7 @@ export default function QuoteEditorPage() {
     defaultValues: {
       quoteItems: [],
       status: 'draft',
-    },
+    } as QuoteFormValues, // Explicit cast
   });
 
   useEffect(() => {
@@ -206,7 +221,7 @@ export default function QuoteEditorPage() {
         setQuote({
             id: q.id,
             projectName: q.projectName || (q.request ? q.request.projectName : 'Untitled Quote'),
-            clientName: q.client ? q.client.name : 'Unknown Client',
+            clientName: q.client ? (q.client.companyName || q.client.name) : 'Unknown Client',
             status: q.status,
             taxRate: q.taxRate,
             deliveryFee: q.deliveryFee,
@@ -239,7 +254,7 @@ export default function QuoteEditorPage() {
   }, [selectedQuoteItems, setValue]);
 
   const { netPrice, taxAmount, finalTotalPrice } = useMemo(() => {
-    const calculatedNetPrice = selectedQuoteItems.reduce((sum, item) => sum + item.price, 0);
+    const calculatedNetPrice = selectedQuoteItems.reduce((sum, item) => sum + (item.price || 0), 0);
     const calculatedTaxAmount = calculatedNetPrice * taxRate;
     const calculatedFinalTotalPrice = calculatedNetPrice + calculatedTaxAmount + deliveryFee;
     return {
@@ -323,28 +338,28 @@ export default function QuoteEditorPage() {
       
       // Wait, if I create a new one, I get a new ID. The URL changes.
       
-      const response = await fetch(`/api/admin/quotes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // If we have a requestId, pass it. If not, don't.
-          requestId: quote?.requestId,
-          // If standalone, we need to pass clientId and projectName again to ensure they are preserved/updated
-          clientId: undefined, // We don't have clientId in state easily available except in quote object, but schema makes it optional if requestId exists.
-          // Wait, if I'm editing, I should ideally update the EXISTING record.
-          
-          quoteItems: selectedQuoteItems,
-          status: values.status,
-          netPrice: netPrice,
-          taxRate: taxRate,
-          taxAmount: taxAmount,
-          deliveryFee: deliveryFee,
-          totalPrice: finalTotalPrice,
-        }),
-      });
-
+            const method = quoteId ? 'PUT' : 'POST'; // Use PUT for existing, POST for new (though this page is for existing)
+            const url = quoteId ? `/api/admin/quotes/${quoteId}` : `/api/admin/quotes`;
+      
+            const response = await fetch(url, {
+              method: method,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                requestId: quote?.requestId || null,
+                clientId: quote?.clientId || null,
+                projectName: quote?.projectName || null,
+                notes: quote?.notes || null,
+                quoteItems: selectedQuoteItems,
+                status: values.status,
+                netPrice: netPrice,
+                taxRate: taxRate,
+                taxAmount: taxAmount,
+                deliveryFee: deliveryFee,
+                totalPrice: finalTotalPrice,
+              }),
+            });
       const data = await response.json();
 
       if (!response.ok) {
@@ -520,8 +535,8 @@ export default function QuoteEditorPage() {
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.serviceName}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{item.description}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{item.quantity}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 text-right">${item.unitPrice.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium text-right">${item.price.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 text-right">${(item.unitPrice || 0).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium text-right">${(item.price || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -23,6 +23,6 @@ const config = defineConfig({
 });
 
 console.log('Config object created with keys:', Object.keys(config));
-console.log('dbCredentials keys:', Object.keys(config.dbCredentials));
+
 
 export default config;

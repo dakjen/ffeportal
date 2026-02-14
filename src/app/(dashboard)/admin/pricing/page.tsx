@@ -93,7 +93,7 @@ export default function AdminPricingPage() {
     let calculated = internalCost * (1 + (margin / 100));
     switch (roundOption) {
       case 'up':
-        calculated = Math.ceil(calculated);
+        calculated = Math.ceil(calculated / 5) * 5;
         break;
       case 'down':
         calculated = Math.floor(calculated);
@@ -324,6 +324,7 @@ export default function AdminPricingPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Margin (%)</label>
+            <p className="text-xs text-gray-500 mt-1">25% margin is standard</p>
             <input
               type="number"
               min="0"
@@ -392,11 +393,10 @@ export default function AdminPricingPage() {
                     <span className="text-xs uppercase font-semibold text-gray-400 block">Cost</span>
                     ${parseFloat(entry.internalCostInput || '0').toFixed(2)}
                   </div>
-                  <div>
-                    <span className="text-xs uppercase font-semibold text-gray-400 block">Margin</span>
-                    {entry.marginInput || '0'}%
-                  </div>
-                  <div>
+                                                          <div>
+                                                            <span className="text-xs uppercase font-semibold text-gray-400 block">Margin</span>
+                                                            {entry.marginInput || '0'}%
+                                                          </div>                  <div>
                     <span className="text-xs uppercase font-semibold text-gray-400 block">Rounding</span>
                     <span className="capitalize">{entry.roundOption}</span>
                   </div>

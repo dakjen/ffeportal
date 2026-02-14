@@ -11,22 +11,24 @@ const updateInvoiceSchema = z.object({
 });
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> } // Type params as Promise
 ) {
   try {
+    const { id } = await context.params;
+
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const payload = await verifyToken(token);
     if (!payload || payload.role !== 'admin') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
-    const body = await req.json();
+    const body = await request.json();
     const { status } = updateInvoiceSchema.parse(body);
 
     await db.update(invoices)
       .set({ status })
-      .where(eq(invoices.id, params.id));
+      .where(eq(invoices.id, id));
 
     return NextResponse.json({ message: 'Invoice updated successfully' }, { status: 200 });
 

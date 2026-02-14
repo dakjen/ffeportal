@@ -5,7 +5,8 @@ import { db } from '@/db';
 import { quotes, users, requests } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import Link from 'next/link';
-import { Edit, Eye } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
+import DeleteQuoteButton from './delete-quote-button'; // Import the new component
 
 export default async function AdminQuotesPage() {
   const token = (await cookies()).get('auth_token')?.value;
@@ -70,8 +71,8 @@ export default async function AdminQuotesPage() {
                   <td className="py-3 px-4 text-gray-700">{quote.clientName || 'N/A'}</td>
                   <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                          ${quote.status === 'draft' ? 'bg-gray-100 text-gray-800' : 
-                            quote.status === 'sent' ? 'bg-blue-100 text-blue-800' : 
+                          ${quote.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                            quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
                             quote.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {quote.status}
                         </span>
@@ -82,7 +83,7 @@ export default async function AdminQuotesPage() {
                     <Link href={`/admin/quotes/${quote.id}`} className="text-gray-600 hover:text-[var(--brand-black)]">
                       <Edit className="h-4 w-4" />
                     </Link>
-                    {/* If sent, show PDF link or View link */}
+                    <DeleteQuoteButton quoteId={quote.id} quoteStatus={quote.status} />
                   </td>
                 </tr>
               ))}

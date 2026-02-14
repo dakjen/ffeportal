@@ -6,11 +6,11 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) {

@@ -21,11 +21,11 @@ const updatePricingEntrySchema = z.object({
 });
 
 export async function GET(
-  req: Request,
-  { params }: { params: { entryId: string } }
+  request: Request, // Changed from req to request for consistency
+  context: { params: Promise<{ entryId: string }> }
 ) {
   try {
-    const { entryId } = await params;
+    const { entryId } = await context.params;
 
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -48,11 +48,11 @@ export async function GET(
 }
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { entryId: string } }
+  request: Request,
+  context: { params: Promise<{ entryId: string }> }
 ) {
   try {
-    const { entryId } = await params;
+    const { entryId } = await context.params;
 
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -96,11 +96,11 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { entryId: string } }
+  request: Request,
+  context: { params: Promise<{ entryId: string }> }
 ) {
   try {
-    const { entryId } = await params;
+    const { entryId } = await context.params;
 
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });

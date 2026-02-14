@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') || 'client'; // Default to 'client'
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [role, setRole] = useState(initialRole);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +26,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, companyName }),
+        body: JSON.stringify({ name, email, password, companyName, role }),
       });
 
       const data = await response.json();

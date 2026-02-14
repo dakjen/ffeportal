@@ -14,17 +14,19 @@ const updateUserSchema = z.object({
 });
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const payload = await verifyToken(token);
     if (!payload || payload.role !== 'admin') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
-    const body = await req.json();
+    const body = await request.json();
     const data = updateUserSchema.parse(body);
 
     const updateData: any = {};
@@ -37,7 +39,7 @@ export async function PUT(
 
     const [updatedUser] = await db.update(users)
       .set(updateData)
-      .where(eq(users.id, params.id))
+      .where(eq(users.id, id))
       .returning();
 
     if (!updatedUser) {
@@ -54,10 +56,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
@@ -65,12 +69,12 @@ export async function DELETE(
     if (!payload || payload.role !== 'admin') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     // Prevent deleting yourself
-    if (params.id === payload.id) {
+    if (id === payload.id) {
         return NextResponse.json({ message: 'Cannot delete your own account' }, { status: 400 });
     }
 
     const [deletedUser] = await db.delete(users)
-      .where(eq(users.id, params.id))
+      .where(eq(users.id, id))
       .returning();
 
     if (!deletedUser) {

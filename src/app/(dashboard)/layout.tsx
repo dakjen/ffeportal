@@ -51,9 +51,7 @@ export default function DashboardLayout({
                 <Link href="/admin/quotes" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/admin/quotes') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <FileText className="h-4 w-4" /> Quotes
                 </Link>
-                <Link href="/admin/invoices" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
-                  <DollarSign className="h-4 w-4" /> Invoices
-                </Link>
+
 
                 {/* New Tools Dropdown */}
                 <div className="relative">
@@ -73,6 +71,9 @@ export default function DashboardLayout({
                       </Link>
                       <Link href="/admin/users" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/users') ? 'text-[var(--brand-beige)]' : ''}`}>
                         Users
+                      </Link>
+                      <Link href="/admin/invoices" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : ''}`}>
+                        Invoices
                       </Link>
                     </div>
                   )}

@@ -6,21 +6,11 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(
-  req: Request,
-  { params }: { params: { requestId: string } }
+  request: Request,
+  context: { params: Promise<{ requestId: string }> }
 ) {
   try {
-    const token = (await cookies()).get('auth_token')?.value;
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
-    }
-
-    const { requestId } = await params;
+    const { requestId } = await context.params;
     console.log('API: Attempting to fetch requestId:', requestId);
 
     const [requestData] = await db.select()
@@ -49,6 +39,7 @@ export async function GET(
         description: requestData.description,
         status: requestData.status,
         clientName: clientData.name,
+        clientCompanyName: clientData.companyName, // Added clientCompanyName
         clientId: clientData.id,
         createdAt: requestData.createdAt,
     };

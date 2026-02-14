@@ -21,7 +21,7 @@ export default function LandingPage() {
               Sign In
             </Link>
             <Link
-              href="/register"
+              href="/register?role=client"
               className="rounded-full bg-[var(--brand-red)] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-red)]"
             >
               Start Project
@@ -42,7 +42,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/register"
+              href="/register?role=client"
               className="w-full sm:w-auto rounded-full bg-[var(--brand-red)] px-8 py-4 text-lg font-semibold text-white shadow-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
             >
               Get a Quote <ArrowRight className="h-5 w-5" />
@@ -144,12 +144,15 @@ export default function LandingPage() {
           <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
             Join hundreds of satisfied clients who trust DesignDomain for their FF&E needs. Start your project today.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center rounded-full bg-[var(--brand-red)] px-8 py-4 text-lg font-semibold text-white shadow-lg hover:bg-opacity-90 transition-all"
-          >
-            Create Free Account
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            
+            <Link
+              href="/register?role=contractor"
+              className="inline-flex items-center justify-center rounded-full border border-gray-600 px-8 py-4 text-lg font-medium text-gray-300 hover:text-white hover:border-white transition-all"
+            >
+              Sign Up as Contractor
+            </Link>
+          </div>
         </div>
       </section>
 

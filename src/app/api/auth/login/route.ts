@@ -32,8 +32,14 @@ export async function POST(req: Request) {
       sameSite: 'lax',
     });
 
-    const { passwordHash, ...userWithoutPassword } = user;
-    return NextResponse.json({ message: 'Login successful', user: userWithoutPassword }, { status: 200 });
+    let redirectUrl = '/client/dashboard'; // Default
+    if (user.role === 'admin') {
+      redirectUrl = '/admin/dashboard';
+    } else if (user.role === 'contractor') {
+      redirectUrl = '/contractor/dashboard';
+    }
+
+    return NextResponse.redirect(new URL(redirectUrl, req.url));
 
   } catch (error) {
     if (error instanceof z.ZodError) {

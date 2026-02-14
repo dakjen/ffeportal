@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react'; // Import ArrowLeft icon
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,37 +15,35 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Login failed');
-        return;
-      }
-
-      // Redirect based on role or to a default dashboard
-      if (data.user?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/client/dashboard');
-      }
-
-    } catch (err) {
-      setError('An unexpected error occurred.');
-      console.error(err);
-    }
-  };
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email, password }),
+            });
+    
+            if (!response.ok) {
+              const data = await response.json(); // Only parse JSON for error responses
+              setError(data.message || 'Login failed');
+              return;
+            }
+    
+            // If response is ok, the server has already issued a redirect.
+            // No further client-side action is needed here, as the browser will follow the redirect.
+            return;
+    
+          } catch (err) {
+            setError('An unexpected error occurred.');
+            console.error(err);
+          }  };
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative"> {/* Add relative positioning */}
+      <Link href="/" className="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors">
+        <ArrowLeft className="h-5 w-5" />
+      </Link>
       <h1 className="text-2xl font-bold text-center mb-6 text-white">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

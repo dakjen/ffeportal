@@ -9,10 +9,10 @@ import { generateQuotePdf } from '@/lib/pdf-generator';
 
 export async function GET(
   request: Request,
-  { params }: { params: { quoteId: string } }
+  context: { params: Promise<{ quoteId: string }> }
 ) {
   try {
-    const { quoteId } = params;
+    const { quoteId } = await context.params;
 
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) {

@@ -19,7 +19,7 @@ const quoteItemSchema = z.object({
 
 const saveQuoteSchema = z.object({
   requestId: z.string().uuid().optional().nullable(),
-  clientId: z.string().uuid().optional(),
+  clientId: z.string().uuid().nullable().optional(),
   projectName: z.string().optional(),
   notes: z.string().optional(),
   quoteItems: z.array(quoteItemSchema),
@@ -44,6 +44,10 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    // Convert empty string clientId to null for nullable Zod schema
+    if (body.clientId === '') {
+      body.clientId = null;
+    }
     const {
       requestId,
       clientId,
@@ -59,9 +63,9 @@ export async function POST(req: Request) {
     } = saveQuoteSchema.parse(body);
 
     const result = await db.transaction(async (tx) => {
-      let finalClientId = clientId;
-      let finalProjectName = projectName;
-      let client = null;
+      let finalClientId: string | null = null;
+      let finalProjectName: string;
+      let client: typeof users.$inferSelect | undefined;
 
       // Logic to resolve Client and Project Name
       if (requestId) {
@@ -77,16 +81,19 @@ export async function POST(req: Request) {
         finalProjectName = request.projectName;
       } else {
         // Case B: Standalone Quote
-        if (!finalClientId) throw new Error('Client ID is required for standalone quotes');
-        if (!finalProjectName) finalProjectName = 'Untitled Quote';
+        if (status !== 'draft' && !clientId) {
+          throw new Error('Client ID is required for standalone quotes (unless it is a draft)');
+        }
+        finalClientId = clientId || null;
+        finalProjectName = projectName || 'Untitled Quote';
       }
 
-      // Fetch Client Details (needed for email/notifications)
+      // Fetch Client Details (only if finalClientId is available)
       if (finalClientId) {
-          [client] = await tx.select().from(users).where(eq(users.id, finalClientId));
-          if (!client) throw new Error('Client not found');
-      } else {
-           throw new Error('Could not determine Client for this quote');
+        [client] = await tx.select().from(users).where(eq(users.id, finalClientId));
+        if (!client) throw new Error('Client not found with ID: ' + finalClientId);
+      } else if (status !== 'draft') {
+        throw new Error('Client ID is required for standalone quotes (non-draft)');
       }
 
 

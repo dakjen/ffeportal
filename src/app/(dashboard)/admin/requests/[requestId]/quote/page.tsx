@@ -146,8 +146,9 @@ export default function QuoteBuilderPage() {
     id: string;
     projectName: string;
     clientName: string;
-    currentQuoteId?: string; // Add currentQuoteId
-    currentQuoteStatus?: string; // Add currentQuoteStatus
+    clientCompanyName?: string; // Add clientCompanyName
+    currentQuoteId?: string;
+    currentQuoteStatus?: string;
     // Add other request fields as needed by the UI
   }
 
@@ -399,7 +400,7 @@ export default function QuoteBuilderPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[var(--brand-black)]">Build Quote</h2>
-          <p className="text-gray-500">Project: {request.projectName} | Client: {request.clientName}</p>
+          <p className="text-gray-500">Project: {request.projectName} | Client: {request.clientCompanyName || request.clientName}</p>
         </div>
         <div className="flex gap-3"> {/* New wrapper for buttons */}
           {request?.currentQuoteId && request?.currentQuoteStatus !== 'sent' && (

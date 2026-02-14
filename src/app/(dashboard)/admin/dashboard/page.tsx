@@ -51,6 +51,22 @@ export default async function AdminDashboardPage() {
     .orderBy(desc(requests.createdAt))
     .limit(5);
 
+  // Fetch recent sent quotes (last 5)
+  const recentSentQuotes = await db.select({
+    id: quotes.id,
+    projectName: quotes.projectName,
+    totalPrice: quotes.totalPrice,
+    status: quotes.status,
+    createdAt: quotes.createdAt,
+    clientName: users.name,
+    clientCompanyName: users.companyName,
+  })
+  .from(quotes)
+  .where(eq(quotes.status, 'sent'))
+  .leftJoin(users, eq(quotes.clientId, users.id))
+  .orderBy(desc(quotes.createdAt))
+  .limit(5);
+
   return (
     <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -155,15 +171,73 @@ export default async function AdminDashboardPage() {
                       <td className="px-6 py-4 font-medium text-[var(--brand-black)]">{req.projectName}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                          ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                            req.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                          ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            req.status === 'approved' ? 'bg-green-100 text-green-800' :
                             req.status === 'quoted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {req.status === 'pending' && (
+                            <span className="flex w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                          )}
                           {req.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-500">{new Date(req.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4 text-right">
                         <Link href={`/admin/requests/${req.id}/quote`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
+                          Manage
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Quotes Table */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-[var(--brand-black)]">Recent Quotes</h3>
+            <Link href="/admin/quotes" className="text-sm text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
+              View All
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[var(--brand-white)] text-gray-500 font-medium border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-3">Project Name</th>
+                  <th className="px-6 py-3">Client</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Total</th>
+                  <th className="px-6 py-3">Date Sent</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentSentQuotes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      No sent quotes found.
+                    </td>
+                  </tr>
+                ) : (
+                  recentSentQuotes.map((quote) => (
+                    <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-[var(--brand-black)]">{quote.projectName || 'Untitled Quote'}</td>
+                      <td className="px-6 py-4 text-gray-700">{quote.clientCompanyName || quote.clientName || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                          ${quote.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                            quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                            quote.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {quote.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-700 font-medium">${parseFloat(quote.totalPrice).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-gray-500">{new Date(quote.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-right">
+                        <Link href={`/admin/quotes/${quote.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
                           Manage
                         </Link>
                       </td>
