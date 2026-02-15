@@ -30,7 +30,7 @@ export async function PUT(
     const body = await request.json();
     const data = updateUserSchema.parse(body);
 
-    const updateData: any = {};
+    const updateData: Partial<typeof users.$inferInsert> = {};
     if (data.name) updateData.name = data.name;
     if (data.email) updateData.email = data.email;
     if (data.role) updateData.role = data.role;

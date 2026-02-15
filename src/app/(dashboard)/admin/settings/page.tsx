@@ -19,7 +19,7 @@ export default async function AdminSettingsPage() {
     if (userPayload.role !== 'admin') {
       redirect('/client/dashboard');
     }
-  } catch (error) {
+  } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
     redirect('/login');
   }
 

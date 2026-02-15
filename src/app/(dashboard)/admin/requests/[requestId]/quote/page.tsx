@@ -450,47 +450,48 @@ export default function QuoteBuilderPage() {
 
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-md">{error}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Available Services */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-[var(--brand-black)]">Service Catalog</h3>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-            {availableServices.length === 0 ? (
-              <p className="text-sm text-gray-500">No services found. Add them in Services & Pricing.</p>
-            ) : (
-              availableServices.map((service) => (
-                <div key={service.id} className="p-4 border rounded-lg bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-[var(--brand-black)]">{service.name}</h4>
-                    <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded text-gray-600">
-                      ${parseFloat(service.price).toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
-                  <button
-                    type="button"
-                    onClick={() => handleAddService(service)}
-                    disabled={!isQuoteEditable} // Added disabled
-                    className="w-full py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded hover:bg-[var(--brand-black)] hover:text-white transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" /> Add to Quote
-                  </button>
+      {/* Service Catalog - Moved to a top section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+        <h3 className="font-semibold text-[var(--brand-black)]">Service Catalog</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"> {/* Responsive grid for services */}
+          {availableServices.length === 0 ? (
+            <p className="text-sm text-gray-500 col-span-full">No services found. Add them in Services & Pricing.</p>
+          ) : (
+            availableServices.map((service) => (
+              <div key={service.id} className="p-4 border rounded-lg bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors group">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium text-[var(--brand-black)]">{service.name}</h4>
+                  <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded text-gray-600">
+                    ${parseFloat(service.price).toFixed(2)}
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => handleAddCustomItem()} // Changed to arrow function
-            disabled={!isQuoteEditable} // Added disabled
-            className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
-          >
-            <Plus className="h-4 w-4" /> Add Custom Item
-          </button>
+                <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
+                <button
+                  type="button"
+                  onClick={() => handleAddService(service)}
+                  disabled={!isQuoteEditable} // Added disabled
+                  className="w-full py-1.5 text-xs font-medium bg-gray-50 text-gray-700 rounded hover:bg-[var(--brand-black)] hover:text-white transition-colors flex items-center justify-center gap-1"
+                >
+                  <Plus className="h-3 w-3" /> Add to Quote
+                </button>
+              </div>
+            ))
+          )}
         </div>
+        <button
+          type="button"
+          onClick={() => handleAddCustomItem()} // Changed to arrow function
+          disabled={!isQuoteEditable} // Added disabled
+          className="w-full py-2 text-sm font-medium bg-gray-100 text-[var(--brand-black)] rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 mt-4"
+        >
+          <Plus className="h-4 w-4" /> Add Custom Item
+        </button>
+      </div>
 
-        {/* Quote Builder Canvas */}
-        <div className="lg:col-span-2 space-y-4">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* Main 2-column layout */}
+        {/* Left Column: Quote Builder Canvas (Items) */}
+        <div className="space-y-4">
           <h3 className="font-semibold text-[var(--brand-black)]">Quote Items ({selectedQuoteItems.length})</h3>
           
           <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300 min-h-[300px]">
@@ -498,7 +499,7 @@ export default function QuoteBuilderPage() {
               <SortableContext items={selectedQuoteItems.map(item => item.id!)} strategy={verticalListSortingStrategy}>
                 {selectedQuoteItems.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
-                    <p>Select services from the catalog to build your quote.</p>
+                    <p>Select services from the catalog or add custom items to build your quote.</p>
                   </div>
                 ) : (
                   selectedQuoteItems.map((item) => (
@@ -514,10 +515,15 @@ export default function QuoteBuilderPage() {
               </SortableContext>
             </DndContext>
           </div>
+        </div>
+
+        {/* Right Column: Quote Details (Pricing Summary & Actions) */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-[var(--brand-black)]">Quote Details</h3>
 
           {/* Pricing Summary */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
-            <h3 className="font-semibold text-[var(--brand-black)] mb-3">Pricing Summary</h3>
+            <h4 className="font-semibold text-[var(--brand-black)] mb-3">Financial Summary</h4>
 
             {/* Net Price (Sum of Items) */}
             <div className="flex justify-between items-center text-sm">

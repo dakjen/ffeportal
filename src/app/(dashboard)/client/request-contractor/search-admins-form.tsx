@@ -16,6 +16,7 @@ interface AdminSearchResult {
   id: string;
   name: string;
   email: string;
+  companyName: string | null;
 }
 
 interface SearchAdminsFormProps {
@@ -109,7 +110,7 @@ export default function SearchAdminsForm({ clientId }: SearchAdminsFormProps) {
           <input
             {...register('query')}
             className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] text-gray-900 placeholder-gray-500"
-            placeholder="Search admins by name or email"
+            placeholder="Search admins by name or company name..."
           />
           {errors.query && <p className="text-red-600 text-xs mt-1">{errors.query.message}</p>}
         </div>
@@ -148,7 +149,7 @@ export default function SearchAdminsForm({ clientId }: SearchAdminsFormProps) {
           {admins.map((admin) => (
             <div key={admin.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-100">
               <div>
-                <p className="font-medium text-[var(--brand-black)]">{admin.name}</p>
+                <p className="font-medium text-[var(--brand-black)]">{admin.companyName || admin.name}</p> {/* Display companyName, fallback to name */}
                 <p className="text-sm text-gray-500">{admin.email}</p>
               </div>
               <button

@@ -1,9 +1,8 @@
-import { SignJWT } from 'jose'; // Removed jwtVerify
+import { SignJWT, jwtVerify } from 'jose';
 import { db } from '../db';
 import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { verifyToken, UserPayload } from './auth-edge'; // Import verifyToken and UserPayload from auth-edge
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
@@ -22,7 +21,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-// JWT Token Management (UserPayload is now imported)
+// JWT Token Management
+interface UserPayload {
+  id: string;
+  email: string;
+  role: 'admin' | 'client' | 'contractor';
+}
 
 export async function createToken(payload: UserPayload): Promise<string> {
   const iat = Math.floor(Date.now() / 1000);
@@ -35,12 +39,25 @@ export async function createToken(payload: UserPayload): Promise<string> {
     .sign(new TextEncoder().encode(JWT_SECRET));
 }
 
-// verifyToken function removed as it's in auth-edge.ts
+export async function verifyToken(token: string): Promise<UserPayload> {
+  const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+
+  // Explicitly check for and extract the properties
+  if (typeof payload.id !== 'string' || typeof payload.email !== 'string' || !['admin', 'client', 'contractor'].includes(payload.role as any)) {
+    throw new Error('Invalid token payload');
+  }
+
+  return {
+    id: payload.id,
+    email: payload.email,
+    role: payload.role as 'admin' | 'client' | 'contractor',
+  };
+}
 
 // User fetching by token (for middleware/server components)
 export async function getUserByToken(token: string) {
   try {
-    const payload = await verifyToken(token); // Use verifyToken from auth-edge
+    const payload = await verifyToken(token);
     const [user] = await db.select().from(users).where(eq(users.id, payload.id));
     return user;
   } catch (error) {

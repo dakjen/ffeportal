@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 
 const newRequestSchema = z.object({
+  projectId: z.string().uuid('Project ID is required'),
   projectName: z.string().min(1, 'Project Name is required'),
   description: z.string().min(1, 'Description is required'),
 });
@@ -23,10 +24,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { projectName, description } = newRequestSchema.parse(body);
+    const { projectId, projectName, description } = newRequestSchema.parse(body);
 
     const newRequest = await db.insert(requests).values({
       clientId: payload.id, // Client ID from the authenticated user
+      projectId,
       projectName,
       description,
       status: 'pending', // Initial status

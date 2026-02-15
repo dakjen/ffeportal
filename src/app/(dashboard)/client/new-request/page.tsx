@@ -1,57 +1,203 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, PlusCircle, FileText, XCircle, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 const newRequestSchema = z.object({
+  projectId: z.string().uuid('Invalid Project ID').optional(),
   projectName: z.string().min(1, 'Project Name is required'),
+  projectLocation: z.string().min(1, 'Project Location is required').optional(),
   description: z.string().min(1, 'Description is required'),
+}).refine(data => data.projectId || (data.projectName && data.projectLocation), {
+  message: 'Either select an existing project or provide a new project name and location',
+  path: ['projectName'],
 });
 
 type NewRequestFormValues = z.infer<typeof newRequestSchema>;
 
-export default function NewRequestPage() {
+interface ProjectOption {
+  id: string;
+  name: string;
+  location: string;
+}
+
+export default function NewRequestForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [fetchingProjects, setFetchingProjects] = useState(true);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<NewRequestFormValues>({
     resolver: zodResolver(newRequestSchema),
   });
 
+  const selectedProjectId = watch('projectId');
+
+  // Fetch projects when component mounts
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const res = await fetch('/api/client/projects');
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data);
+          
+          const queryProjectId = searchParams.get('projectId');
+          if (queryProjectId && data.some((p: ProjectOption) => p.id === queryProjectId)) {
+            setValue('projectId', queryProjectId);
+            const selectedProject = data.find((p: ProjectOption) => p.id === queryProjectId);
+            if (selectedProject) {
+              setValue('projectName', selectedProject.name);
+            }
+          } else if (data.length > 0) {
+            setValue('projectId', data[0].id);
+            setValue('projectName', data[0].name);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+        toast.error('Failed to load your projects.');
+      } finally {
+        setFetchingProjects(false);
+      }
+    }
+    fetchProjects();
+  }, [setValue, searchParams]);
+
+  // Update projectName in form whenever projectId changes
+  useEffect(() => {
+    const project = projects.find(p => p.id === selectedProjectId);
+    if (project) {
+      setValue('projectName', project.name);
+    } else {
+      setValue('projectName', '');
+    }
+  }, [selectedProjectId, projects, setValue]);
+
+  // Handle file selection
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const newFiles = Array.from(event.target.files);
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
+  }, []);
+
+  // Handle drag and drop
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer.files) {
+      const newFiles = Array.from(event.dataTransfer.files);
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
+  }, []);
+
+  // Handle removing a selected file
+  const handleRemoveFile = useCallback((fileToRemove: File) => {
+    setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
+  }, []);
+
   const onSubmit = async (data: NewRequestFormValues) => {
     setLoading(true);
     setError('');
+    let newRequestId = ''; // To store the ID of the newly created request
+
     try {
+      let finalProjectId = data.projectId;
+
+      // If no project selected, create a new one implicitly
+      if (!finalProjectId) {
+        const createProjectResponse = await fetch('/api/client/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: data.projectName,
+            location: data.projectLocation,
+            description: data.description,
+          }),
+        });
+
+        const newProjectResult = await createProjectResponse.json();
+
+        if (!createProjectResponse.ok) {
+          throw new Error(newProjectResult.message || 'Failed to create new project.');
+        }
+        finalProjectId = newProjectResult.project.id;
+        toast.success(`New project "${data.projectName}" created.`);
+      }
+
+      // Submit the request with the resolved project ID
       const response = await fetch('/api/client/requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          projectId: finalProjectId,
+          projectName: data.projectName,
+          description: data.description,
+        }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.message || 'Failed to submit request.');
-        return;
+        throw new Error(result.message || 'Failed to submit request.');
+      }
+      newRequestId = result.request.id;
+
+      // --- File Upload Logic ---
+      if (selectedFiles.length > 0) {
+        setUploadingFiles(true);
+        const formData = new FormData();
+        formData.append('requestId', newRequestId);
+        selectedFiles.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        const uploadRes = await fetch('/api/client/documents', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const uploadErrorData = await uploadRes.json();
+          console.error('Failed to upload documents:', uploadErrorData.message);
+          toast.error('Request submitted, but some documents failed to upload.');
+        } else {
+          toast.success('Documents uploaded successfully!');
+        }
       }
 
-      router.push('/client/dashboard'); 
-    } catch (err) {
-      setError('An unexpected error occurred.');
+      toast.success('Request submitted successfully!');
+      router.push('/client/current-projects'); 
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message || 'An unexpected error occurred while submitting the request.');
+      else setError('An unexpected error occurred while submitting the request.');
       console.error(err);
     } finally {
       setLoading(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -65,21 +211,69 @@ export default function NewRequestPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Project Selection */}
+            <div>
+              <label htmlFor="projectId" className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
+                Choose Existing Project (Optional)
+              </label>
+              {fetchingProjects ? (
+                <p className="text-gray-500 text-sm">Loading projects...</p>
+              ) : (
+                <select
+                  id="projectId"
+                  {...register('projectId')}
+                  className="w-full border border-gray-300 rounded-lg shadow-sm p-3 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] transition-colors"
+                >
+                  <option value="">-- Choose a Project --</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name} ({project.location})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {errors.projectId && (
+                <p className="text-red-500 text-sm mt-1">{errors.projectId.message}</p>
+              )}
+            </div>
+
+            {/* Project Name (editable if no projectId selected) */}
             <div>
               <label htmlFor="projectName" className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
-                Project Name
+                Project Name {selectedProjectId ? '(From Selection)' : '(Required for New Project)'}
               </label>
               <input
-                id="projectName"
                 type="text"
-                placeholder="e.g. Downtown Office Renovation"
+                id="projectName"
                 {...register('projectName')}
-                className="w-full border border-gray-300 rounded-lg shadow-sm p-3 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] transition-colors"
+                readOnly={!!selectedProjectId}
+                className={`w-full border border-gray-300 rounded-lg shadow-sm p-3 text-gray-900 ${selectedProjectId ? 'bg-gray-100' : 'focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]'} transition-colors`}
+                placeholder={selectedProjectId ? '' : 'Enter a name for your new project'}
               />
               {errors.projectName && (
                 <p className="text-red-500 text-sm mt-1">{errors.projectName.message}</p>
               )}
             </div>
+
+            {/* Project Location (editable if no projectId selected) */}
+            {!selectedProjectId && (
+                <div>
+                  <label htmlFor="projectLocation" className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
+                    Project Location (Required for New Project)
+                  </label>
+                  <input
+                    type="text"
+                    id="projectLocation"
+                    {...register('projectLocation')}
+                    className="w-full border border-gray-300 rounded-lg shadow-sm p-3 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] transition-colors"
+                    placeholder="e.g., San Francisco, CA"
+                  />
+                  {errors.projectLocation && (
+                    <p className="text-red-500 text-sm mt-1">{errors.projectLocation.message}</p>
+                  )}
+                </div>
+            )}
+            
             
             <div>
               <label htmlFor="description" className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
@@ -97,11 +291,46 @@ export default function NewRequestPage() {
               )}
             </div>
 
-            {/* Placeholder for future file upload */}
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-not-allowed opacity-60">
-               <UploadCloud className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-               <p className="text-sm font-medium text-gray-600">Drag and drop files here, or click to browse</p>
-               <p className="text-xs text-gray-400 mt-1">Supports PDF, JPG, PNG (Coming Soon)</p>
+            {/* File Upload Component */}
+            <div>
+              <label className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
+                Attach Documents (Optional)
+              </label>
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('file-input')?.click()}
+              >
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf, .jpg, .jpeg, .png, .gif, .doc, .docx, .xls, .xlsx"
+                />
+                <UploadCloud className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-600">Drag and drop files here, or click to browse</p>
+                <p className="text-xs text-gray-400 mt-1">Supports PDF, JPG, PNG, GIF, DOC, DOCX, XLS, XLSX</p>
+              </div>
+
+              {selectedFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Selected Files:</p>
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-800">{file.name}</span>
+                      </div>
+                      <button type="button" onClick={() => handleRemoveFile(file)} className="text-gray-500 hover:text-gray-700">
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {error && (
@@ -120,10 +349,17 @@ export default function NewRequestPage() {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || fetchingProjects || uploadingFiles}
                 className="px-8 py-3 border border-transparent rounded-full shadow-lg text-sm font-semibold text-white bg-[var(--brand-red)] hover:bg-[#5a0404] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-red)] disabled:opacity-70 transition-all"
               >
-                {loading ? 'Submitting Request...' : 'Submit Request'}
+                {loading || uploadingFiles ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    {loading ? 'Submitting Request...' : 'Uploading Documents...'}
+                  </>
+                ) : (
+                  'Submit Request'
+                )}
               </button>
             </div>
           </form>

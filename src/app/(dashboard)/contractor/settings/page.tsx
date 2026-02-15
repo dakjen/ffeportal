@@ -32,8 +32,8 @@ export default async function ContractorSettingsPage() {
   }
 
   // Fetch full user details from DB for the form
-  const [contractor] = await db.select(users)
-    .from(users)
+  const [contractor] = await db.select().from(users)
+
     .where(eq(users.id, userPayload.id));
 
   if (!contractor) {

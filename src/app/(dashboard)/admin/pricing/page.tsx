@@ -20,17 +20,7 @@ interface PricingEntry {
 export default function AdminPricingPage() {
   const [pricingEntries, setPricingEntries] = useState<PricingEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savingEntryId, setSavingEntryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // States for the calculation (per-entry or for a selected one)
-  const [editStates, setEditStates] = useState<{
-    [entryId: string]: {
-      internalCostInput?: number;
-      marginInput?: number;
-      roundOption: 'none' | 'up' | 'down';
-    };
-  }>({});
 
   // States for "Add New Pricing Entry" form
   const [newEntryFormName, setNewEntryFormName] = useState('');
@@ -57,7 +47,7 @@ export default function AdminPricingPage() {
         const data = await res.json();
         setPricingEntries(data.pricingEntries);
         // Initialize edit states
-        const initialEditStates: typeof editStates = {};
+        const initialEditStates: { [entryId: string]: { internalCostInput?: number; marginInput?: number; roundOption: 'none' | 'up' | 'down'; }; } = {};
         data.pricingEntries.forEach((entry: PricingEntry) => {
           initialEditStates[entry.id] = {
             internalCostInput: parseFloat(String(entry.internalCostInput)) || 0,
@@ -65,7 +55,7 @@ export default function AdminPricingPage() {
             roundOption: entry.roundOption || 'none',
           };
         });
-        setEditStates(initialEditStates);
+
       }
     } catch (err: unknown) {
       console.error('Failed to fetch pricing entries:', err);
@@ -92,63 +82,6 @@ export default function AdminPricingPage() {
         break;
     }
     return calculated;
-  };
-
-  const handleUpdatePricingEntry = async (entryId: string) => {
-    setSavingEntryId(entryId);
-    setError(null);
-    const entryEditState = editStates[entryId];
-    if (!entryEditState) return;
-
-    const newPrice = calculatePrice(
-      entryEditState.internalCostInput || 0,
-      entryEditState.marginInput || 0,
-      entryEditState.roundOption
-    );
-
-    try {
-      const res = await fetch(`/api/admin/pricing-entries/${entryId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          internalCostInput: entryEditState.internalCostInput,
-          marginInput: entryEditState.marginInput,
-          calculatedPrice: newPrice,
-          roundOption: entryEditState.roundOption,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to update pricing entry');
-      }
-
-      // Update local pricingEntries state to reflect new price
-      setPricingEntries(prevEntries =>
-        prevEntries.map(e =>
-          e.id === entryId ? {
-            ...e,
-            internalCostInput: entryEditState.internalCostInput!,
-            marginInput: entryEditState.marginInput!,
-            calculatedPrice: newPrice,
-            roundOption: entryEditState.roundOption,
-          } : e
-        )
-      );
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-    } finally {
-      setSavingEntryId(null);
-    }
-  };
-
-  const handleEditStateChange = (entryId: string, field: 'internalCostInput' | 'marginInput' | 'roundOption', value: number | 'none' | 'up' | 'down') => {
-    setEditStates(prev => ({
-      ...prev,
-      [entryId]: {
-        ...prev[entryId],
-        [field]: value,
-      },
-    }));
   };
 
   const handleAddNewPricingEntry = async () => {

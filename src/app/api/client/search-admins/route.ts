@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { eq, like, or } from 'drizzle-orm';
+import { eq, like, or, and } from 'drizzle-orm';
 import { verifyToken } from '@/lib/auth-edge';
 import { cookies } from 'next/headers';
 
@@ -37,12 +37,15 @@ export async function GET(req: Request) {
       id: users.id,
       name: users.name,
       email: users.email,
+      companyName: users.companyName, // Add companyName to selected fields
     })
     .from(users)
-    .where(or(
+    .where(and(
       eq(users.role, 'admin'), // Ensure only admins are returned
-      like(users.name, searchPattern),
-      like(users.email, searchPattern)
+      or(
+        like(users.name, searchPattern),
+        like(users.companyName, searchPattern) // Search by companyName
+      )
     ));
 
     return NextResponse.json({ admins }, { status: 200 });

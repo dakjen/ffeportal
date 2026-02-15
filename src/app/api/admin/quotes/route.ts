@@ -169,8 +169,12 @@ export async function POST(req: Request) {
           };
           await sgMail.send(msg);
           console.log(`Email notification sent to ${client!.email} for quote ${newQuote.id}.`);
-        } catch (emailError: any) {
-          console.error(`Failed to send email notification:`, emailError.message);
+        } catch (emailError: unknown) {
+          if (emailError instanceof Error) {
+            console.error(`Failed to send email notification:`, emailError.message);
+          } else {
+            console.error(`Failed to send email notification:`, emailError);
+          }
         }
 
         // In-app notification

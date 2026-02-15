@@ -27,10 +27,17 @@ export async function POST(request: Request) {
     await sgMail.send(msg);
 
     return NextResponse.json({ message: 'Email sent successfully!' }, { status: 200 });
-  } catch (error: any) {
-    console.error('SendGrid Email Error:', error.response?.body || error.message);
+  } catch (error: unknown) {
+    let errorMessage: string;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      // Fallback for non-Error objects, e.g., raw JSON from API or other types
+      errorMessage = 'An unexpected error occurred: ' + String(error);
+    }
+    console.error('SendGrid Email Error:', error); // Log the full error object for inspection
     return NextResponse.json(
-      { message: 'Failed to send email', error: error.response?.body || error.message },
+      { message: 'Failed to send email', error: errorMessage },
       { status: 500 }
     );
   }

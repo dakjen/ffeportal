@@ -10,9 +10,9 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
-  // Allow access to auth pages without token
+  // Allow access to auth pages without token, or redirect if already logged in
   if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-    if (token) {
+    if (token) { // If there's a token, try to verify and redirect to dashboard
       try {
         const payload = await verifyToken(token);
         if (payload.role === 'admin') {
@@ -22,13 +22,16 @@ export async function middleware(request: NextRequest) {
         } else {
           return NextResponse.redirect(new URL('/client/dashboard', request.url));
         }
-      } catch (error) {
+      } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
+        // If token is invalid, allow access to login/register page
         return NextResponse.next();
       }
     }
+    // No token, or invalid token for auth pages, allow access
     return NextResponse.next();
   }
 
+  // For all other pages, if there's no token, redirect to login
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }

@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { requests, quotes, users } from '@/db/schema';
 import { eq, desc, count } from 'drizzle-orm';
 import Link from 'next/link';
-import { ArrowUpRight, ClipboardList, CheckCircle, Clock, FileText, Plus } from 'lucide-react';
+import { ArrowUpRight, ClipboardList, CheckCircle, Clock, FileText } from 'lucide-react';
 import QuickActions from './quick-actions';
 
 export default async function AdminDashboardPage() {

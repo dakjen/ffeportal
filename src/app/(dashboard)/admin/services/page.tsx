@@ -135,18 +135,18 @@ export default function AdminServicesPage() {
                   <div className="mt-4 flex gap-6 text-sm">
                     <div>
                       <span className="text-gray-400 block text-xs uppercase tracking-wide">Public Price</span>
-                      <span className="font-semibold text-[var(--brand-black)]">${parseFloat(service.price).toFixed(2)}</span>
+                      <span className="font-semibold text-[var(--brand-black)]">${service.price.toFixed(2)}</span>
                     </div>
                     {service.internalCost && (
                       <div>
                         <span className="text-gray-400 block text-xs uppercase tracking-wide">Internal Cost</span>
-                        <span className="font-medium text-gray-600">${parseFloat(service.internalCost).toFixed(2)}</span>
+                        <span className="font-medium text-gray-600">${(service.internalCost || 0).toFixed(2)}</span>
                       </div>
                     )}
                     {service.margin && (
                       <div>
                         <span className="text-gray-400 block text-xs uppercase tracking-wide">Margin</span>
-                        <span className="font-medium text-green-600">{service.margin}%</span>
+                        <span className="font-medium text-green-600">{(service.margin || 0)}%</span>
                       </div>
                     )}
                   </div>

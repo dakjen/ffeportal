@@ -56,6 +56,7 @@ export const laborRequests = pgTable('labor_requests', {
 export const requests = pgTable('requests', {
   id: uuid('id').defaultRandom().primaryKey(),
   clientId: uuid('client_id').notNull().references(() => users.id),
+  projectId: uuid('project_id').references(() => projects.id), // New FK to projects table
   projectName: varchar('project_name', { length: 256 }).notNull(),
   description: text('description'),
   status: requestStatusEnum('status').default('pending').notNull(),
@@ -156,6 +157,15 @@ export const pricingEntries = pgTable('pricing_entries', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const projects = pgTable('projects', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clientId: uuid('client_id').notNull().references(() => users.id),
+  name: varchar('name', { length: 256 }).notNull(),
+  location: varchar('location', { length: 256 }),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   parent: one(users, {
@@ -173,6 +183,12 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   contractorRequestsAsAdmin: many(contractorRequests, { relationName: 'admin_requests' }),
   laborRequestsAsAdmin: many(laborRequests, { relationName: 'admin_labor_requests' }),
   laborRequestsAsContractor: many(laborRequests, { relationName: 'contractor_labor_requests' }),
+  projects: many(projects), // Link users to projects they own
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  client: one(users, { fields: [projects.clientId], references: [users.id] }),
+  requests: many(requests), // Link projects to their requests
 }));
 
 export const contractorRequestsRelations = relations(contractorRequests, ({ one }) => ({
@@ -188,6 +204,7 @@ export const laborRequestsRelations = relations(laborRequests, ({ one }) => ({
 
 export const requestsRelations = relations(requests, ({ one, many }) => ({
   client: one(users, { fields: [requests.clientId], references: [users.id] }),
+  project: one(projects, { fields: [requests.projectId], references: [projects.id] }), // Link requests to project
   documents: many(documents),
   quotes: many(quotes),
   invoices: many(invoices),

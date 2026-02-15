@@ -15,7 +15,7 @@ const addUserSchema = z.object({
   companyName: z.string().optional(),
 });
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const token = (await cookies()).get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       role,
     }).returning();
 
-    const { passwordHash, ...userWithoutPassword } = newUser;
+    const { passwordHash: _passwordHash, ...userWithoutPassword } = newUser;
     return NextResponse.json({ message: 'User created successfully', user: userWithoutPassword }, { status: 201 });
 
   } catch (error) {

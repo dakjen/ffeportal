@@ -6,15 +6,14 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import Link from 'next/link';
 import { Download, ArrowLeft, Edit, Plus } from 'lucide-react';
-import { getShortId } from '@/lib/pdf-generator';
 
 interface QuoteItem {
   id?: string;
   serviceName: string;
-  description?: string;
-  price?: number;
-  unitPrice?: number;
-  quantity?: number;
+  description: string | null;
+  price: string;
+  unitPrice: string | null;
+  quantity: string;
   pricingType?: 'hourly' | 'flat';
 }
 
@@ -126,7 +125,7 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
             <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Quote Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p className="text-gray-700 mb-2"><strong>Quote ID:</strong> {getShortId(quote.id)}</p>
+                    <p className="text-gray-700 mb-2"><strong>Quote ID:</strong> {quote.id}</p>
                     <p className="text-gray-700 mb-2"><strong>Status:</strong> <span className="font-semibold capitalize">{quote.status}</span></p>
                     <p className="text-gray-700 mb-2"><strong>Quote Created:</strong> {new Date(quote.createdAt).toLocaleString()}</p>
                 </div>

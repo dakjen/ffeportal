@@ -13,25 +13,41 @@ const contractorProfileSchema = z.object({
   licenseNumber: z.string().nullable().optional(),
   insuranceInfo: z.string().nullable().optional(),
   trades: z.string().nullable().optional(),
-  website: z.string().url().nullable().or(z.literal('')),
+  website: z.string().url().nullable().optional(),
   description: z.string().min(1, 'Description is required'),
-  brandColorPrimary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').optional().default('#710505'),
-  brandColorSecondary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').optional().default('#f0f0f0'),
+  brandColorPrimary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').default('#710505'),
+  brandColorSecondary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').default('#f0f0f0'),
 });
 
-type ContractorProfileFormValues = z.infer<typeof contractorProfileSchema>;
+// Type representing the output of the schema (guaranteed string due to .default())
+type ContractorProfileFormOutput = z.infer<typeof contractorProfileSchema>;
+
+// Type representing the input to useForm (should match the initialData structure)
+interface ContractorProfileFormInput {
+  name: string;
+  companyName: string | null; // Nullable but required if present
+  ein: string;
+  licenseNumber?: string | null; // Optional
+  insuranceInfo?: string | null; // Optional
+  trades?: string | null; // Optional
+  website?: string | null; // Optional
+  description: string;
+  brandColorPrimary?: string; // Explicitly string
+  brandColorSecondary?: string; // Explicitly string
+}
 
 interface ContractorProfileFormProps {
   initialData: {
     id: string;
     name: string;
-    email: string;
+    email:
+    string;
     companyName: string | null;
     ein: string | null;
     licenseNumber: string | null;
     insuranceInfo: string | null;
     trades: string | null;
-    website: string | null;
+    website?: string | null; // Changed to optional
     description: string | null;
     brandColorPrimary: string;
     brandColorSecondary: string;
@@ -51,8 +67,8 @@ export default function ContractorProfileForm({ initialData }: ContractorProfile
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ContractorProfileFormValues>({
-    resolver: zodResolver(contractorProfileSchema),
+  } = useForm<ContractorProfileFormInput>({ // Use Input type here
+    resolver: zodResolver(contractorProfileSchema), // Resolve with the original schema
     defaultValues: {
       name: initialData.name,
       companyName: initialData.companyName || '',
@@ -67,7 +83,9 @@ export default function ContractorProfileForm({ initialData }: ContractorProfile
     },
   });
 
-  const onSubmit = async (data: ContractorProfileFormValues) => {
+  const onSubmit = async (data: ContractorProfileFormInput) => { // data is Input type
+    // Parse the data with the schema to get the validated output type
+    const parsedData = contractorProfileSchema.parse(data);
     setLoading(true);
     setError('');
     setSuccess('');

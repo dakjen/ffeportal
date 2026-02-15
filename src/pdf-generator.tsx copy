@@ -1,0 +1,197 @@
+// src/lib/pdf-generator.ts
+import React from 'react';
+import { Document, Page, Text, View, StyleSheet, Image, renderToBuffer, Font } from '@react-pdf/renderer';
+import { jsPDF } from 'jspdf'; // Invoice logic kept
+
+// --------------------- FONTS ---------------------
+Font.register({
+  family: 'Helvetica',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/Inter%20(web)/Inter-Regular.woff2', fontWeight: 'normal' },
+    { src: 'https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/Inter%20(web)/Inter-Bold.woff2', fontWeight: 'bold' },
+  ]
+});
+
+// --------------------- HELPERS ---------------------
+export const formatCurrency = (amount: number) =>
+  `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+export const getShortId = (id: string) => id.substring(0, 6);
+
+export function generate6DigitQuoteId() {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+export function formatTimestamp(date: Date) {
+  return date.toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+// --------------------- INTERFACES ---------------------
+export interface QuoteItem {
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface QuoteDetails {
+  id?: string;
+  projectName: string;
+  clientName: string;
+  clientCompanyName?: string;
+  logoPath?: string;
+  items: QuoteItem[];
+}
+
+// --------------------- STYLES ---------------------
+const quoteStyles = StyleSheet.create({
+  page: {
+    padding: 48,
+    fontSize: 10,
+    fontFamily: 'Helvetica',
+    backgroundColor: '#ffffff',
+    color: '#000000'
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    borderBottomWidth: 2,
+    borderBottomColor: '#710505',
+    paddingBottom: 12
+  },
+  logoContainer: { flexDirection: 'column' },
+  logo: { width: 120, marginBottom: 6 },
+  quoteTitle: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: '#710505', marginBottom: 4 },
+  quoteMeta: { fontSize: 9, color: '#555555', marginBottom: 2 },
+  email: { fontSize: 9, color: '#710505', marginTop: 4 },
+  clientInfo: { fontSize: 10, lineHeight: 1.4 },
+  section: { marginTop: 24, marginBottom: 8 },
+  sectionTitle: { fontSize: 11, fontFamily: 'Helvetica-Bold', marginBottom: 8, color: '#710505', letterSpacing: 0.5 },
+  narrative: { fontSize: 10, lineHeight: 1.6, color: '#000000' },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#f6f6f6', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#ac8a64', marginBottom: 4 },
+  tableRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#eeeeee' },
+  serviceCol: { width: '55%' },
+  qtyCol: { width: '10%', textAlign: 'right' },
+  priceCol: { width: '15%', textAlign: 'right' },
+  totalCol: { width: '20%', textAlign: 'right' },
+  bold: { fontFamily: 'Helvetica-Bold' },
+  totalSection: { marginTop: 16, paddingTop: 8, borderTopWidth: 2, borderTopColor: '#710505', alignItems: 'flex-end' },
+  totalText: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#710505' },
+  footer: { marginTop: 40, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#ac8a64', fontSize: 9, color: '#555555', textAlign: 'center' }
+});
+
+// --------------------- QUOTE DOCUMENT ---------------------
+export const QuoteDocument = ({ quoteDetails }: { quoteDetails: QuoteDetails }) => {
+  const quoteId = quoteDetails.id || generate6DigitQuoteId()
+  const timestamp = formatTimestamp(new Date())
+
+  const total = quoteDetails.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+  return (
+    <Document>
+      <Page size="LETTER" style={quoteStyles.page}>
+        {/* HEADER */}
+        <View style={quoteStyles.header}>
+          <View style={quoteStyles.logoContainer}>
+            <Image src={quoteDetails.logoPath || "/icon.png"} style={quoteStyles.logo} />
+            <Text style={quoteStyles.email}>quote@designdomainllc.com</Text>
+          </View>
+
+          <View>
+            <Text style={quoteStyles.quoteTitle}>Quote</Text>
+            <Text style={quoteStyles.quoteMeta}>Quote ID: {quoteId}</Text>
+            <Text style={quoteStyles.quoteMeta}>Sent: {timestamp}</Text>
+          </View>
+        </View>
+
+        {/* CLIENT & PROJECT INFO */}
+        <View style={quoteStyles.clientInfo}>
+          <Text style={quoteStyles.bold}>Client:</Text> {quoteDetails.clientName} {quoteDetails.clientCompanyName ? `(${quoteDetails.clientCompanyName})` : ''}
+          {"\n"}
+          <Text style={quoteStyles.bold}>Project:</Text> {quoteDetails.projectName}
+        </View>
+
+        {/* PROFESSIONAL NARRATIVE */}
+        <View style={quoteStyles.section}>
+          <Text style={quoteStyles.sectionTitle}>Professional Narrative</Text>
+          <Text style={quoteStyles.narrative}>
+            DesignDomain provides full-service FF&E procurement,
+            sourcing furniture, fixtures, and equipment aligned with your
+            design vision, functional needs, and budget. We leverage
+            industry relationships to secure pricing typically 20–50%
+            below retail while managing vendor coordination, logistics,
+            and delivery to ensure a seamless experience.
+          </Text>
+        </View>
+
+        {/* SCOPE */}
+        <View style={quoteStyles.section}>
+          <Text style={quoteStyles.sectionTitle}>Scope of Work</Text>
+          <Text style={quoteStyles.narrative}>
+            This quote includes sourcing, procurement coordination,
+            vendor communication, order management, and delivery
+            coordination for the items listed below.
+          </Text>
+        </View>
+
+        {/* TABLE */}
+        <View style={quoteStyles.section}>
+          <View style={quoteStyles.tableHeader}>
+            <Text style={[quoteStyles.serviceCol, quoteStyles.bold]}>Service</Text>
+            <Text style={[quoteStyles.qtyCol, quoteStyles.bold]}>Qty</Text>
+            <Text style={[quoteStyles.priceCol, quoteStyles.bold]}>Unit</Text>
+            <Text style={[quoteStyles.totalCol, quoteStyles.bold]}>Total</Text>
+          </View>
+          {quoteDetails.items.map((item, index) => {
+            const lineTotal = item.quantity * item.unitPrice
+            return (
+              <View key={index} style={quoteStyles.tableRow}>
+                <Text style={quoteStyles.serviceCol}>
+                  <Text style={quoteStyles.bold}>{item.name}</Text>
+                  {"\n"}
+                  {item.description}
+                </Text>
+                <Text style={quoteStyles.qtyCol}>{item.quantity}</Text>
+                <Text style={quoteStyles.priceCol}>{formatCurrency(item.unitPrice)}</Text>
+                <Text style={quoteStyles.totalCol}>{formatCurrency(lineTotal)}</Text>
+              </View>
+            )
+          })}
+        </View>
+
+        {/* TOTAL */}
+        <View style={quoteStyles.totalSection}>
+          <Text style={quoteStyles.totalText}>Total: {formatCurrency(total)}</Text>
+        </View>
+
+        {/* PAYMENT TERMS */}
+        <View style={quoteStyles.section}>
+          <Text style={quoteStyles.sectionTitle}>Payment Terms</Text>
+          <Text style={quoteStyles.narrative}>
+            A 35% deposit is required to initiate procurement.
+            Remaining balance is due prior to delivery.
+            This quote is valid for 14 days.
+          </Text>
+        </View>
+
+        {/* FOOTER */}
+        <Text style={quoteStyles.footer}>
+          DesignDomain LLC • quote@designdomainllc.com
+        </Text>
+      </Page>
+    </Document>
+  )
+}
+
+// --------------------- GENERATE QUOTE PDF ---------------------
+export async function generateQuotePdf(quoteDetails: QuoteDetails): Promise<Buffer> {
+  return await renderToBuffer(<QuoteDocument quoteDetails={quoteDetails} />);
+}

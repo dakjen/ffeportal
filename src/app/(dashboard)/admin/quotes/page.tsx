@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { quotes, users, requests } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import Link from 'next/link';
-import { Edit, Trash, Download } from 'lucide-react';
+import { Edit, Download } from 'lucide-react';
 import DeleteQuoteButton from './delete-quote-button'; // Import the new component
 
 export default async function AdminQuotesPage() {

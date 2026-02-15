@@ -6,14 +6,6 @@ import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 
-import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge';
-
 const profileUpdateSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   companyName: z.string().optional(),

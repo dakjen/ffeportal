@@ -4,8 +4,8 @@ import { db } from '@/db';
 import { quotes, quoteItems, requests, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge'; // Changed from auth-edge
-import { generateQuotePdf } from '@/lib/pdf-generator';
+import { verifyToken } from '@/lib/auth-edge';
+import { generateQuotePdf, QuoteItem, QuoteDetails, getShortId } from '@/lib/pdf-generator';
 
 export const runtime = 'nodejs'; // Explicitly set to Node.js runtime
 
@@ -41,7 +41,7 @@ export async function GET(
       return NextResponse.json({ message: 'Forbidden: This quote is still in draft' }, { status: 403 });
     }
 
-    let requestData = null;
+    let requestData: typeof requests.$inferSelect | null = null;
     if (quote.requestId) {
       const [fetchedRequest] = await db.select().from(requests).where(eq(requests.id, quote.requestId));
       if (!fetchedRequest) {
@@ -50,7 +50,7 @@ export async function GET(
       requestData = fetchedRequest;
     }
 
-    let clientData = null;
+    let clientData: typeof users.$inferSelect | null = null;
     if (requestData && requestData.clientId) {
       const [fetchedClient] = await db.select().from(users).where(eq(users.id, requestData.clientId));
       if (!fetchedClient) {
@@ -66,7 +66,6 @@ export async function GET(
     }
 
     // Authorization check: Only admin or the client who owns the quote can download
-    // This now relies on clientData possibly being null if it's a quote not linked to any client directly.
     if (userRole !== 'admin' && (!clientData || userId !== clientData.id)) {
       return NextResponse.json({ message: 'Forbidden: You do not have access to this quote' }, { status: 403 });
     }
@@ -74,36 +73,40 @@ export async function GET(
     // Fetch quote items
     const quoteItemsData = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quoteId));
 
-    // Prepare data for PDF generation
-    const quoteDetails = {
+    // Prepare data for PDF generation, matching the QuoteDetails interface
+    const quoteDetails: QuoteDetails = {
       id: quote.id,
-      totalPrice: parseFloat(quote.totalPrice || '0'), // Ensure number type
-      netPrice: parseFloat(quote.netPrice || '0'),
+      projectName: requestData?.projectName || quote.projectName || 'Unnamed Project',
+      clientName: clientData?.name || 'Unknown Client',
+      clientCompanyName: clientData?.companyName,
+      netPrice: parseFloat(quote.netPrice),
       taxRate: parseFloat(quote.taxRate || '0'),
       taxAmount: parseFloat(quote.taxAmount || '0'),
       deliveryFee: parseFloat(quote.deliveryFee || '0'),
-      status: quote.status,
-      projectName: requestData?.projectName || quote.projectName || 'Untitled Project',
-      clientName: clientData?.name || 'N/A',
-      clientCompanyName: clientData?.companyName || undefined,
+      totalPrice: parseFloat(quote.totalPrice),
+      version: quote.version || undefined,
+      paymentTerms: quote.paymentTerms || undefined,
+      servicesNarrative: quote.servicesNarrative || undefined,
+      sentAt: quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt), 
+
       items: quoteItemsData.map(item => ({
         serviceName: item.serviceName,
         description: item.description || undefined,
-        price: parseFloat(item.price), // Ensure number type
-        unitPrice: parseFloat(item.unitPrice || '0'), // Ensure number type
-        quantity: parseFloat(item.quantity), // Ensure number type
+        quantity: parseFloat(item.quantity),
+        unitPrice: parseFloat(item.unitPrice || '0'),
+        price: parseFloat(item.price),
       })),
     };
 
     // Generate PDF
     const pdfBuffer = await generateQuotePdf(quoteDetails);
 
-    const formattedDate = new Date(quote.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD
-    const shortQuoteId = quote.id.substring(0, 6);
+    const formattedDate = new Date(quote.createdAt).toISOString().split('T')[0];
+    const shortQuoteId = getShortId(quote.id);
     const filename = `DesignDomainLLC-Quote-${formattedDate}-${shortQuoteId}.pdf`;
 
     // Return PDF as response
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,

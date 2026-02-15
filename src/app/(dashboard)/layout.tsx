@@ -115,9 +115,6 @@ export default function DashboardLayout({
                 <Link href="/client/team" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/team' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Users className="h-4 w-4" /> Team
                 </Link>
-                <Link href="/client/request-contractor" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname?.startsWith('/client/request-contractor') ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
-                  <UserPlus className="h-4 w-4" /> Request Contractor
-                </Link>
                 <Link href="/client/settings" className={`flex items-center gap-1 text-sm font-medium transition-colors ${pathname === '/client/settings' ? 'text-[var(--brand-beige)]' : 'hover:text-[var(--brand-beige)]'}`}>
                   <Users className="h-4 w-4" /> Settings
                 </Link>

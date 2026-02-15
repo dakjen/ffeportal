@@ -1,15 +1,33 @@
-// src/lib/pdf-generator.ts
+// src/lib/pdf-generator.tsx (Server-side compatible for React-PDF)
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, renderToBuffer } from '@react-pdf/renderer';
-import { jsPDF } from 'jspdf'; // Import jspdf
+import { Document, Page, Text, View, StyleSheet, Image, renderToBuffer } from '@react-pdf/renderer';
 
-// Register a font for extended characters, if needed.
-// For basic Latin text, default fonts are often fine, but custom fonts
-// can be registered here if specific typography is required.
-// Example: Font.register({ family: 'Roboto', src: 'path/to/Roboto-Regular.ttf' });
+// ========================== 
+// UTILITY FUNCTIONS
+// ========================== 
+export const formatCurrency = (amount: number) =>
+  `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
+export const getShortId = (id: string) => id.substring(0, 6); // Exported getShortId
 
-interface QuoteItem {
+function generate6DigitQuoteId() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function formatTimestamp(date: Date) {
+  return date.toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+// ========================== 
+// QUOTE INTERFACES
+// ========================== 
+export interface QuoteItem {
   serviceName: string;
   description?: string;
   price: number;
@@ -17,82 +35,81 @@ interface QuoteItem {
   quantity: number;
 }
 
-interface QuoteDetails {
+export interface QuoteDetails {
   id: string;
-  version?: string; // e.g., 'v1'
+  version?: string;
   netPrice: number;
   taxRate: number;
   taxAmount: number;
   deliveryFee: number;
   totalPrice: number;
-  status: string;
   projectName: string;
   clientName: string;
   clientCompanyName?: string;
-  logoPath?: string; // Not directly used by react-pdf/renderer for image embedding, needs conversion to base64 or URL
+  logoPath?: string; // Absolute URL or base64
   paymentTerms?: string; // e.g., 'Net 30'
+  servicesNarrative?: string;
+  sentAt?: Date; // Exact time quote was sent
   items: QuoteItem[];
 }
 
-const formatCurrency = (amount: number) =>
-  `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-
-// Create styles
-const styles = StyleSheet.create({
+// ========================== 
+// QUOTE STYLES (for @react-pdf/renderer)
+// ========================== 
+const quoteStyles = StyleSheet.create({
   page: {
-    fontFamily: 'Helvetica', // Default font, can be overridden with custom registered fonts
+    fontFamily: 'Helvetica',
     fontSize: 10,
-    paddingTop: 35,
-    paddingBottom: 65,
-    paddingHorizontal: 35,
+    paddingTop: 50,
+    paddingBottom: 80,
+    paddingHorizontal: 45,
+    lineHeight: 1.4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#cccccc',
-    paddingBottom: 10,
   },
-  companyInfo: {
-    fontSize: 10,
-    textAlign: 'left',
+  logo: {
+    width: 120,
+    height: 40,
+    objectFit: 'contain',
+    marginBottom: 5,
   },
   companyTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Helvetica-Bold',
     color: '#710505',
+    letterSpacing: 1,
   },
   quoteInfo: {
-    fontSize: 10,
-    textAlign: 'right',
-  },
-  title: {
-    fontSize: 24,
-    textAlign: 'center',
-    fontFamily: 'Helvetica-Bold',
-    color: '#710505',
-    marginBottom: 20,
+    alignItems: 'flex-end',
   },
   section: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 5,
     color: '#710505',
+    marginBottom: 5,
   },
-  text: {
-    marginBottom: 3,
+  servicesNarrative: {
+    fontSize: 10,
+    color: '#000000',
+    fontStyle: 'italic',
+    marginBottom: 10,
+    lineHeight: 1.4,
   },
   clientDetails: {
-    marginBottom: 10,
-    padding: 10,
+    marginBottom: 20,
+    padding: 15,
     backgroundColor: '#f6f6f6',
-    borderRadius: 5,
+    borderLeftWidth: 4,
+    borderLeftColor: '#710505',
   },
   table: {
+    display: 'table',
     width: 'auto',
     marginBottom: 10,
   },
@@ -100,20 +117,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   tableColHeader: {
-    width: '25%',
-    borderStyle: 'solid',
-    borderBottomColor: '#cccccc',
-    borderBottomWidth: 1,
-    padding: 5,
+    width: '40%',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     fontFamily: 'Helvetica-Bold',
-    color: '#710505',
+    color: '#ffffff',
+    backgroundColor: '#710505',
+    fontSize: 10,
   },
   tableCol: {
-    width: '25%',
-    borderStyle: 'solid',
-    borderBottomColor: '#eeeeee',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     borderBottomWidth: 1,
-    padding: 5,
+    borderBottomColor: '#eeeeee',
   },
   itemDescription: {
     fontSize: 8,
@@ -126,103 +142,162 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   totalText: {
-    width: 'auto',
+    width: 70,
     textAlign: 'right',
     padding: 3,
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
     color: '#710505',
   },
+  totalsContainer: {
+    marginTop: 25,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#cccccc',
+  },
   footer: {
     position: 'absolute',
+    bottom: 40,
+    left: 45,
+    right: 45,
     fontSize: 8,
-    bottom: 30,
-    left: 0,
-    right: 0,
     textAlign: 'center',
-    color: '#710505',
+    color: '#ac8d79',
+    borderTopWidth: 1,
+    borderTopColor: '#eeeeee',
+    paddingTop: 10,
   },
 });
 
-export const getShortId = (id: string) => id.substring(0, 6);
-
+// ========================== 
+// QUOTE PDF COMPONENT (@react-pdf/renderer)
+// ========================== 
 const QuoteDocument = ({ quoteDetails }: { quoteDetails: QuoteDetails }) => (
-  <Document title={`Quote - ${quoteDetails.projectName} - ${getShortId(quoteDetails.id)}`}>
-    <Page size="A4" style={styles.page}>
+  <Document>
+    <Page size="A4" style={quoteStyles.page}>
+
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.companyInfo}>
-          <Text style={styles.companyTitle}>DesignDomain LLC</Text>
+      <View style={quoteStyles.header}>
+        <View>
+          {quoteDetails.logoPath && (
+            <Image src={quoteDetails.logoPath} style={quoteStyles.logo} alt="Company Logo" />
+          )}
+          <Text style={quoteStyles.companyTitle}>DesignDomain LLC</Text>
           <Text>Professional Design Services</Text>
           <Text>quote@designdomainllc.com</Text>
         </View>
-        <View style={styles.quoteInfo}>
-          <Text>Project: {quoteDetails.projectName}</Text>
-          <Text>Quote ID: {getShortId(quoteDetails.id)}</Text>
-          <Text>Status: {quoteDetails.status}</Text>
-          {quoteDetails.version && <Text>Version: {quoteDetails.version}</Text>}
+
+        <View style={quoteStyles.quoteInfo}>
+          <Text style={{ fontSize: 10, color: '#777777' }}>
+            Quote ID: {getShortId(quoteDetails.id)}
+          </Text>
+          {quoteDetails.version && (
+            <Text style={{ fontSize: 9, color: '#ac8d79' }}>
+              Version: {quoteDetails.version}
+            </Text>
+          )}
+          {quoteDetails.sentAt && (
+            <Text style={{ fontSize: 9, color: '#777777', marginTop: 2 }}>
+              Sent: {quoteDetails.sentAt.toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+            </Text>
+          )}
         </View>
       </View>
+
+      {/* Top brand bar */}
+      <View style={{
+        height: 6,
+        backgroundColor: '#710505',
+        marginBottom: 15
+      }} />
 
       {/* Client Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Client Details</Text>
-        <View style={styles.clientDetails}>
-          <Text style={styles.text}>Name: {quoteDetails.clientName}</Text>
-          {quoteDetails.clientCompanyName && <Text style={styles.text}>Company: {quoteDetails.clientCompanyName}</Text>}
+      <View style={quoteStyles.section}>
+        <Text style={quoteStyles.sectionTitle}>Client Details</Text>
+        <View style={quoteStyles.clientDetails}>
+          <Text>Name: {quoteDetails.clientName}</Text>
+          {quoteDetails.clientCompanyName && (
+            <Text>Company: {quoteDetails.clientCompanyName}</Text>
+          )}
         </View>
       </View>
 
-      {/* Items Table */}
-      <View style={styles.table}>
-        {/* Table Header */}
-        <View style={styles.tableRow}>
-          <Text style={styles.tableColHeader}>Service</Text>
-          <Text style={[styles.tableColHeader, { width: '15%' }]}>Qty</Text>
-          <Text style={[styles.tableColHeader, { width: '20%' }]}>Unit Price</Text>
-          <Text style={[styles.tableColHeader, { width: '20%', textAlign: 'right' }]}>Total</Text>
+      {/* Services Narrative */}
+      {quoteDetails.servicesNarrative && (
+        <View style={quoteStyles.section}>
+          <Text style={quoteStyles.sectionTitle}>Services Overview</Text>
+          <Text style={quoteStyles.servicesNarrative}>
+            {quoteDetails.servicesNarrative}
+          </Text>
         </View>
+      )}
+
+      {/* Items Table */}
+      <View style={quoteStyles.table}>
+        {/* Table Header */}
+        <View style={quoteStyles.tableRow}>
+          <Text style={quoteStyles.tableColHeader}>Service</Text>
+          <Text style={[quoteStyles.tableColHeader, { width: '10%' }]}>Qty</Text>
+          <Text style={[quoteStyles.tableColHeader, { width: '20%' }]}>Unit Price</Text>
+          <Text style={[quoteStyles.tableColHeader, { width: '20%', textAlign: 'right' }]}>Total</Text>
+        </View>
+
         {/* Table Rows */}
         {quoteDetails.items.map((item, index) => (
-          <View key={index} style={styles.tableRow}>
-            <Text style={styles.tableCol}>
-              {item.serviceName}
-              {item.description && <Text style={styles.itemDescription}>{'\n' + item.description}</Text>}
-            </Text>
-            <Text style={[styles.tableCol, { width: '15%' }]}>{item.quantity}</Text>
-            <Text style={[styles.tableCol, { width: '20%' }]}>{formatCurrency(item.unitPrice)}</Text>
-            <Text style={[styles.tableCol, { width: '20%', textAlign: 'right' }]}>{formatCurrency(item.price)}</Text>
+          <View key={index} style={quoteStyles.tableRow}>
+            <View style={[quoteStyles.tableCol, { width: '40%' }]}>
+              <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10 }}>
+                {item.serviceName}
+              </Text>
+              {item.description && (
+                <Text style={quoteStyles.itemDescription}>
+                  {item.description}
+                </Text>
+              )}
+            </View>
+            <Text style={[quoteStyles.tableCol, { width: '10%' }]}>{item.quantity}</Text>
+            <Text style={[quoteStyles.tableCol, { width: '20%' }]}>{formatCurrency(item.unitPrice)}</Text>
+            <Text style={[quoteStyles.tableCol, { width: '20%', textAlign: 'right' }]}>{formatCurrency(item.price)}</Text>
           </View>
         ))}
       </View>
 
       {/* Totals */}
-      <View style={styles.totalRow}>
-        <Text style={styles.totalText}>Net Price:</Text>
-        <Text style={[styles.totalText, { width: 70 }]}>{formatCurrency(quoteDetails.netPrice)}</Text>
-      </View>
-      {quoteDetails.taxRate > 0 && (
-        <View style={styles.totalRow}>
-          <Text style={styles.totalText}>Tax ({ (quoteDetails.taxRate * 100).toFixed(1) }%):</Text>
-          <Text style={[styles.totalText, { width: 70 }]}>{formatCurrency(quoteDetails.taxAmount)}</Text>
+      <View style={quoteStyles.totalsContainer}>
+        <View style={quoteStyles.totalRow}>
+          <Text style={quoteStyles.totalText}>Net Price:</Text>
+          <Text style={quoteStyles.totalText}>{formatCurrency(quoteDetails.netPrice)}</Text>
         </View>
-      )}
-      {quoteDetails.deliveryFee > 0 && (
-        <View style={styles.totalRow}>
-          <Text style={styles.totalText}>Delivery Fee:</Text>
-          <Text style={[styles.totalText, { width: 70 }]}>{formatCurrency(quoteDetails.deliveryFee)}</Text>
+
+        {quoteDetails.taxRate && quoteDetails.taxRate > 0 && (
+          <View style={quoteStyles.totalRow}>
+            <Text style={quoteStyles.totalText}>Tax ({(quoteDetails.taxRate * 100).toFixed(1)}%):</Text>
+            <Text style={quoteStyles.totalText}>{formatCurrency(quoteDetails.taxAmount)}</Text>
+          </View>
+        )}
+
+        {quoteDetails.deliveryFee && quoteDetails.deliveryFee > 0 && (
+          <View style={quoteStyles.totalRow}>
+            <Text style={quoteStyles.totalText}>Delivery Fee:</Text>
+            <Text style={quoteStyles.totalText}>{formatCurrency(quoteDetails.deliveryFee)}</Text>
+          </View>
+        )}
+
+        <View style={quoteStyles.totalRow}>
+          <Text style={[quoteStyles.totalText, { fontSize: 14 }]}>TOTAL:</Text>
+          <Text style={[quoteStyles.totalText, { width: 70, fontSize: 14 }]}>{formatCurrency(quoteDetails.totalPrice)}</Text>
         </View>
-      )}
-      <View style={styles.totalRow}>
-        <Text style={[styles.totalText, { fontSize: 14 }]}>TOTAL:</Text>
-        <Text style={[styles.totalText, { width: 70, fontSize: 14 }]}>{formatCurrency(quoteDetails.totalPrice)}</Text>
       </View>
 
       {/* Footer */}
-      <Text style={styles.footer} fixed>
+      <Text style={quoteStyles.footer} fixed>
         Thank you for your business.
         {quoteDetails.paymentTerms && <Text>{'\n'}Payment Terms: {quoteDetails.paymentTerms}</Text>}
       </Text>
+
     </Page>
   </Document>
 );
@@ -232,130 +307,3 @@ export async function generateQuotePdf(
 ): Promise<Buffer> {
   return await renderToBuffer(<QuoteDocument quoteDetails={quoteDetails} />);
 }
-
-// Invoice Interfaces for Client-Side JS PDF
-export interface InvoiceFormValues {
-  projectName: string;
-  description: string;
-  amount: number;
-  clientId?: string | null;
-  clientEmail?: string | null;
-}
-
-export interface ClientOption {
-  id: string;
-  name: string;
-  email: string;
-  companyName: string | null;
-}
-
-export interface ContractorDetails {
-  contractorName: string;
-  contractorCompany?: string | null;
-  contractorEmail: string;
-}
-
-export const generateClientSideInvoicePdf = (
-  data: InvoiceFormValues,
-  clients: ClientOption[],
-  contractorDetails: ContractorDetails
-) => {
-  const doc = new jsPDF();
-  const brandRed = [113, 5, 5] as [number, number, number]; // #710505
-  const lightGray = [240, 240, 240] as [number, number, number];
-
-  // Header Background
-  doc.setFillColor(...brandRed);
-  doc.rect(0, 0, 210, 40, 'F');
-
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('INVOICE', 180, 25, { align: 'right' });
-
-  // Company Info (Top Left)
-  doc.setFontSize(16);
-  doc.text(contractorDetails.contractorCompany || contractorDetails.contractorName, 20, 20);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(contractorDetails.contractorEmail, 20, 28);
-
-  // Invoice Meta
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 180, 50, { align: 'right' });
-
-  // Bill To Section
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...brandRed);
-  doc.text('Bill To:', 20, 60);
-  doc.line(20, 62, 190, 62); // Line
-
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  let yPos = 70;
-  
-  if (data.clientId) {
-     const client = clients.find(c => c.id === data.clientId);
-     doc.text(client?.name || '', 20, yPos);
-     yPos += 5;
-     if (client?.companyName) {
-       doc.text(client.companyName, 20, yPos);
-       yPos += 5;
-     }
-     doc.text(client?.email || '', 20, yPos);
-  } else {
-     doc.text(data.clientEmail || 'N/A', 20, yPos);
-  }
-
-  // Project Details Section
-  yPos += 20;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...brandRed);
-  doc.text('Project Details', 20, yPos);
-  doc.line(20, yPos + 2, 190, yPos + 2); // Line
-
-  yPos += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.text('Project:', 20, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(data.projectName, 50, yPos);
-
-  yPos += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Description:', 20, yPos);
-  
-  yPos += 7;
-  doc.setFont('helvetica', 'normal');
-  const splitDescription = doc.splitTextToSize(data.description, 170);
-  doc.text(splitDescription, 20, yPos);
-  
-  const descHeight = splitDescription.length * 5;
-  yPos += descHeight + 10;
-
-  // Total Section
-  doc.setFillColor(...lightGray);
-  doc.rect(120, yPos, 70, 20, 'F'); // Box for total
-  
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('Total Amount:', 130, yPos + 13);
-  doc.setTextColor(...brandRed);
-  doc.setFontSize(14);
-  doc.text(`$${data.amount.toFixed(2)}`, 185, yPos + 13, { align: 'right' });
-
-  // Footer
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(100, 100, 100);
-  doc.text('Thank you for your business.', 105, 280, { align: 'center' });
-  
-  doc.save(`Invoice_${data.projectName.replace(/\s+/g, '_')}.pdf`);
-};
