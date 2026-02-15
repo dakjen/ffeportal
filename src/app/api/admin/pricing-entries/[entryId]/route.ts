@@ -63,7 +63,7 @@ export async function PUT(
     const body = await request.json();
     const data = updatePricingEntrySchema.parse(body);
 
-    const updateData: any = {};
+    const updateData: Partial<typeof pricingEntries.$inferInsert> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.internalCostInput !== undefined) updateData.internalCostInput = data.internalCostInput.toFixed(2);
     if (data.marginInput !== undefined) updateData.marginInput = data.marginInput.toFixed(2);

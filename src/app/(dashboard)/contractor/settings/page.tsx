@@ -32,7 +32,7 @@ export default async function ContractorSettingsPage() {
   }
 
   // Fetch full user details from DB for the form
-  const [contractor] = await db.select()
+  const [contractor] = await db.select(users)
     .from(users)
     .where(eq(users.id, userPayload.id));
 
@@ -48,7 +48,7 @@ export default async function ContractorSettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {/* @ts-ignore - Drizzle schema types might not be fully synced in this context yet, but runtime is fine */}
+        {/* @ts-expect-error - Drizzle schema types might not be fully synced in this context yet, but runtime is fine */}
         <ContractorProfileForm initialData={contractor} />
       </div>
     </div>

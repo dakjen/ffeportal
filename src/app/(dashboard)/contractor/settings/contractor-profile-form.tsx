@@ -51,7 +51,6 @@ export default function ContractorProfileForm({ initialData }: ContractorProfile
     register,
     handleSubmit,
     formState: { errors },
-    reset,
   } = useForm<ContractorProfileFormValues>({
     resolver: zodResolver(contractorProfileSchema),
     defaultValues: {
@@ -86,8 +85,12 @@ export default function ContractorProfileForm({ initialData }: ContractorProfile
 
       setSuccess('Profile updated successfully!');
       router.refresh(); // Refresh the current route to re-fetch server-side props
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
