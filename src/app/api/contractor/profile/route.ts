@@ -9,6 +9,14 @@ import { z } from 'zod';
 const profileUpdateSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   companyName: z.string().nullable().optional(),
+  ein: z.string().nullable().optional(),
+  licenseNumber: z.string().nullable().optional(),
+  insuranceInfo: z.string().nullable().optional(),
+  trades: z.string().nullable().optional(),
+  website: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  brandColorPrimary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').optional(),
+  brandColorSecondary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid Hex Color').optional(),
 });
 
 export async function PUT(req: Request) {
@@ -31,12 +39,20 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { name, companyName } = profileUpdateSchema.parse(body);
+    const { name, companyName, ein, licenseNumber, insuranceInfo, trades, website, description, brandColorPrimary, brandColorSecondary } = profileUpdateSchema.parse(body);
 
     await db.update(users)
       .set({
         name: name,
         companyName: companyName,
+        ein: ein,
+        licenseNumber: licenseNumber,
+        insuranceInfo: insuranceInfo,
+        trades: trades,
+        website: website,
+        description: description,
+        brandColorPrimary: brandColorPrimary,
+        brandColorSecondary: brandColorSecondary,
       })
       .where(eq(users.id, userPayload.id));
 

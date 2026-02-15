@@ -1,36 +1,24 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Settings, Save, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Trash2 } from 'lucide-react';
 
-// Define a schema for creating new pricing entries
-const createPricingEntrySchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  internalCostInput: z.coerce.number().min(0).optional(),
-  marginInput: z.coerce.number().min(0).optional(),
-  pricingType: z.enum(['hourly', 'flat']).default('flat'),
-  roundOption: z.enum(['none', 'up', 'down']).default('none'),
-  description: z.string().optional(),
-  projectNotes: z.string().optional(),
-  clientNotes: z.string().optional(),
-  link: z.string().optional(),
-});
-
-// Define a schema for updating pricing entries (all fields optional)
-const updatePricingEntrySchema = createPricingEntrySchema.partial().extend({
-  id: z.string().min(1, 'Entry ID is required'),
-  calculatedPrice: z.coerce.number().min(0).optional(), // Can be updated
-});
-
-type PricingEntryFormValues = z.infer<typeof createPricingEntrySchema>;
-type UpdatePricingEntryFormValues = z.infer<typeof updatePricingEntrySchema>;
+interface PricingEntry {
+  id: string;
+  name: string;
+  internalCostInput: number | string;
+  marginInput: number | string;
+  calculatedPrice: number | string;
+  pricingType: 'hourly' | 'flat';
+  roundOption: 'none' | 'up' | 'down';
+  description?: string;
+  projectNotes?: string;
+  clientNotes?: string;
+  link?: string;
+}
 
 export default function AdminPricingPage() {
-  const [pricingEntries, setPricingEntries] = useState<any[]>([]);
+  const [pricingEntries, setPricingEntries] = useState<PricingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingEntryId, setSavingEntryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,18 +58,18 @@ export default function AdminPricingPage() {
         setPricingEntries(data.pricingEntries);
         // Initialize edit states
         const initialEditStates: typeof editStates = {};
-        data.pricingEntries.forEach((entry: any) => {
+        data.pricingEntries.forEach((entry: PricingEntry) => {
           initialEditStates[entry.id] = {
-            internalCostInput: parseFloat(entry.internalCostInput) || 0,
-            marginInput: parseFloat(entry.marginInput) || 0,
+            internalCostInput: parseFloat(String(entry.internalCostInput)) || 0,
+            marginInput: parseFloat(String(entry.marginInput)) || 0,
             roundOption: entry.roundOption || 'none',
           };
         });
         setEditStates(initialEditStates);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch pricing entries:', err);
-      setError(err.message);
+      if (err instanceof Error) setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -139,21 +127,21 @@ export default function AdminPricingPage() {
         prevEntries.map(e =>
           e.id === entryId ? {
             ...e,
-            internalCostInput: entryEditState.internalCostInput,
-            marginInput: entryEditState.marginInput,
+            internalCostInput: entryEditState.internalCostInput!,
+            marginInput: entryEditState.marginInput!,
             calculatedPrice: newPrice,
             roundOption: entryEditState.roundOption,
           } : e
         )
       );
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
     } finally {
       setSavingEntryId(null);
     }
   };
 
-  const handleEditStateChange = (entryId: string, field: 'internalCostInput' | 'marginInput' | 'roundOption', value: any) => {
+  const handleEditStateChange = (entryId: string, field: 'internalCostInput' | 'marginInput' | 'roundOption', value: number | 'none' | 'up' | 'down') => {
     setEditStates(prev => ({
       ...prev,
       [entryId]: {
@@ -206,8 +194,8 @@ export default function AdminPricingPage() {
       setNewEntryFormLink('');
       fetchPricingEntries();
 
-    } catch (err: any) {
-      setNewEntryError(err.message);
+    } catch (err: unknown) {
+       if (err instanceof Error) setNewEntryError(err.message);
     } finally {
       setAddingNewEntry(false);
     }
@@ -219,9 +207,9 @@ export default function AdminPricingPage() {
       const res = await fetch(`/api/admin/pricing-entries/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete entry');
       fetchPricingEntries();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message);
+      if (err instanceof Error) setError(err.message);
     }
   };
 
@@ -256,7 +244,7 @@ export default function AdminPricingPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Pricing Type</label>
             <select
               value={newEntryFormPricingType}
-              onChange={(e) => setNewEntryFormPricingType(e.target.value as any)}
+              onChange={(e) => setNewEntryFormPricingType(e.target.value as 'hourly' | 'flat')}
               className="w-full p-2 border border-gray-300 rounded-md text-[var(--brand-black)] bg-white focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
             >
               <option value="flat">Flat Rate</option>
@@ -338,7 +326,7 @@ export default function AdminPricingPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Rounding</label>
             <select
               value={newEntryFormRoundOption}
-              onChange={(e) => setNewEntryFormRoundOption(e.target.value as any)}
+              onChange={(e) => setNewEntryFormRoundOption(e.target.value as 'none' | 'up' | 'down')}
               className="w-full p-2 border border-gray-300 rounded-md text-[var(--brand-black)] bg-white focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)]"
             >
               <option value="none">None</option>
@@ -391,7 +379,7 @@ export default function AdminPricingPage() {
                 <div className="mt-3 flex gap-6 text-sm text-gray-600">
                   <div>
                     <span className="text-xs uppercase font-semibold text-gray-400 block">Cost</span>
-                    ${parseFloat(entry.internalCostInput || '0').toFixed(2)}
+                    ${parseFloat(String(entry.internalCostInput || '0')).toFixed(2)}
                   </div>
                                                           <div>
                                                             <span className="text-xs uppercase font-semibold text-gray-400 block">Margin</span>
@@ -406,7 +394,7 @@ export default function AdminPricingPage() {
               <div className="flex flex-col items-end gap-4">
                 <div className="text-right">
                   <p className="text-xs text-gray-500 uppercase font-semibold">Price</p>
-                  <p className="text-2xl font-bold text-[var(--brand-black)]">${parseFloat(entry.calculatedPrice || '0').toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-[var(--brand-black)]">${parseFloat(String(entry.calculatedPrice || '0')).toFixed(2)}</p>
                 </div>
                 <button 
                   onClick={() => handleDeletePricingEntry(entry.id)}

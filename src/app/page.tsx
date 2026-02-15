@@ -111,7 +111,7 @@ export default function LandingPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider mb-2 text-white/80">Why Choose DesignDomain</h2>
             <h3 className="text-4xl font-bold mb-6">Experience the Difference in Every Detail.</h3>
             <p className="text-lg text-white/90 mb-8 leading-relaxed">
-              We understand that procurement is more than just buying furniture. It's about translating a design vision into reality, on time and on budget.
+              We understand that procurement is more than just buying furniture. It&apos;s about translating a design vision into reality, on time and on budget.
             </p>
             <div className="space-y-4">
               <div className="flex items-start gap-3">

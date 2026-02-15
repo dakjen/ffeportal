@@ -41,9 +41,13 @@ export default function DeleteQuoteButton({ quoteId, quoteStatus }: DeleteQuoteB
 
       // Refresh the current route to reflect the changes
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete quote:', err);
-      setError(err.message || 'An unexpected error occurred during deletion.');
+      if (err instanceof Error) {
+        setError(err.message || 'An unexpected error occurred during deletion.');
+      } else {
+        setError('An unexpected error occurred during deletion.');
+      }
     } finally {
       setIsDeleting(false);
     }

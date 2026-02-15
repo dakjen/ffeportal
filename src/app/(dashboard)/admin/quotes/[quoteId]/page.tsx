@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
@@ -47,7 +47,7 @@ type QuoteFormValues = {
 interface SortableItemProps {
   item: QuoteItem;
   onRemove: (id: string) => void;
-  onUpdate: (id: string, field: keyof QuoteItem, value: any) => void;
+  onUpdate: (id: string, field: keyof QuoteItem, value: string | number) => void;
   isEditable: boolean;
 }
 
@@ -165,6 +165,14 @@ function SortableItem({ item, onRemove, onUpdate, isEditable }: SortableItemProp
   );
 }
 
+interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  price: string;
+  pricingType: 'hourly' | 'flat';
+}
+
 export default function QuoteEditorPage() {
   const router = useRouter();
   const params = useParams();
@@ -175,16 +183,16 @@ export default function QuoteEditorPage() {
     projectName: string;
     notes?: string;
     clientName: string;
-    status: string;
+    status: 'draft' | 'sent' | 'approved' | 'revised';
     taxRate: string;
     deliveryFee: string;
-    quoteItems: any[];
+    quoteItems: QuoteItem[];
     requestId?: string;
     clientId?: string;
   }
 
   const [quote, setQuote] = useState<QuoteData | null>(null);
-  const [availableServices, setAvailableServices] = useState<any[]>([]);
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingQuote, setSavingQuote] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -229,19 +237,19 @@ export default function QuoteEditorPage() {
             requestId: q.requestId,
         });
 
-        setSelectedQuoteItems(q.quoteItems.map((item: any) => ({
+        setSelectedQuoteItems(q.quoteItems.map((item: QuoteItem) => ({
             ...item,
-            price: parseFloat(item.price),
-            unitPrice: parseFloat(item.unitPrice),
-            quantity: parseFloat(item.quantity),
+            price: parseFloat(String(item.price)),
+            unitPrice: parseFloat(String(item.unitPrice)),
+            quantity: parseFloat(String(item.quantity)),
         })));
         setTaxRate(parseFloat(q.taxRate));
         setDeliveryFee(parseFloat(q.deliveryFee));
         setValue('status', q.status);
 
         setAvailableServices(servicesData.services);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -275,7 +283,7 @@ export default function QuoteEditorPage() {
     })
   );
 
-  function handleDragEnd(event: any) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over) return;
     if (active.id !== over.id) {
@@ -287,7 +295,7 @@ export default function QuoteEditorPage() {
     }
   }
 
-  function handleAddService(service: any) {
+  function handleAddService(service: Service) {
     const newId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const unitPrice = parseFloat(service.price);
     const quantity = 1;
@@ -309,7 +317,7 @@ export default function QuoteEditorPage() {
     setSelectedQuoteItems((prev) => prev.filter((item) => item.id !== id));
   }
 
-  function handleUpdateServiceItem(id: string, field: keyof QuoteItem, value: any) {
+  function handleUpdateServiceItem(id: string, field: keyof QuoteItem, value: string | number) {
     setSelectedQuoteItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
     );
@@ -367,8 +375,10 @@ export default function QuoteEditorPage() {
       }
 
       router.push(`/admin/requests`); // Or back to quote list
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred while saving the quote.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+          setError(err.message || 'An unexpected error occurred while saving the quote.');
+      }
     } finally {
       setSavingQuote(false);
     }
@@ -409,8 +419,10 @@ export default function QuoteEditorPage() {
       }
 
       router.push(`/admin/requests`);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred while deleting the quote.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'An unexpected error occurred while deleting the quote.');
+      }
     } finally {
       setSavingQuote(false);
     }

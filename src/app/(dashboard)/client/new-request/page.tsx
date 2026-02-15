@@ -59,7 +59,7 @@ export default function NewRequestPage() {
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-[var(--brand-black)]">Submit New Request</h2>
-        <p className="text-gray-500 mt-2">Provide details about your FF&E needs and we'll get back to you with a quote.</p>
+        <p className="text-gray-500 mt-2">Provide details about your FF&E needs and we&apos;ll get back to you with a quote.</p>
       </div>
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

@@ -14,6 +14,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   
   const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false); // New state for dropdown
+  const [isContractorsDropdownOpen, setIsContractorsDropdownOpen] = useState(false);
 
   const isAdmin = pathname?.startsWith('/admin');
   const isContractor = pathname?.startsWith('/contractor');
@@ -52,6 +53,28 @@ export default function DashboardLayout({
                   <FileText className="h-4 w-4" /> Quotes
                 </Link>
 
+                {/* Contractors Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsContractorsDropdownOpen(!isContractorsDropdownOpen)}
+                    className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-[var(--brand-beige)] focus:outline-none"
+                  >
+                    <Users className="h-4 w-4" /> Contractors
+                  </button>
+                  {isContractorsDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-[var(--brand-black)] rounded-md shadow-lg z-10 py-1">
+                      <Link href="/admin/invoices" onClick={() => setIsContractorsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : ''}`}>
+                        Invoices
+                      </Link>
+                      <Link href="/admin/contractor-requests" onClick={() => setIsContractorsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/contractor-requests') ? 'text-[var(--brand-beige)]' : ''}`}>
+                        Contractors
+                      </Link>
+                      <Link href="/admin/labor-requests" onClick={() => setIsContractorsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/labor-requests') ? 'text-[var(--brand-beige)]' : ''}`}>
+                        Labor Requests
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 {/* New Tools Dropdown */}
                 <div className="relative">
@@ -71,12 +94,6 @@ export default function DashboardLayout({
                       </Link>
                       <Link href="/admin/users" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/users') ? 'text-[var(--brand-beige)]' : ''}`}>
                         Users
-                      </Link>
-                      <Link href="/admin/invoices" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/invoices') ? 'text-[var(--brand-beige)]' : ''}`}>
-                        Invoices
-                      </Link>
-                      <Link href="/admin/contractor-requests" onClick={() => setIsToolsDropdownOpen(false)} className={`block px-4 py-2 text-sm text-white hover:bg-gray-800 ${pathname?.startsWith('/admin/contractor-requests') ? 'text-[var(--brand-beige)]' : ''}`}>
-                        Contractor Requests
                       </Link>
                     </div>
                   )}

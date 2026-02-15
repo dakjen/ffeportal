@@ -1,25 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleFromParams = searchParams.get('role');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [role, setRole] = useState('client'); // Default to 'client', will be updated by useEffect
+  const [role] = useState(
+    (roleFromParams && ['admin', 'client', 'contractor'].includes(roleFromParams))
+      ? (roleFromParams as 'admin' | 'client' | 'contractor')
+      : 'client'
+  );
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const roleFromParams = searchParams.get('role');
-    if (roleFromParams && ['admin', 'client', 'contractor'].includes(roleFromParams)) {
-      setRole(roleFromParams as 'admin' | 'client' | 'contractor');
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,5 +117,13 @@ export default function RegisterPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="text-white text-center p-6">Loading registration...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

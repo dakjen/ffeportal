@@ -73,7 +73,7 @@ export default async function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[var(--brand-black)]">Dashboard</h1>
-          <p className="text-[var(--brand-beige)] mt-1 font-medium">Welcome back, {user?.name || 'Admin'}. Here's what's happening today.</p>
+          <p className="text-[var(--brand-beige)] mt-1 font-medium">Welcome back, {user?.name || 'Admin'}. Here&apos;s what&apos;s happening today.</p>
         </div>
         <Link 
           href="/admin/requests" 

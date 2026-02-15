@@ -9,6 +9,8 @@ export const pricingTypeEnum = pgEnum('pricing_type', ['hourly', 'flat']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['pending', 'approved', 'paid', 'rejected']);
 export const roundOptionEnum = pgEnum('round_option', ['none', 'up', 'down']); // New Enum
 export const contractorRequestStatusEnum = pgEnum('contractor_request_status', ['pending', 'approved', 'rejected']); // New Enum
+export const laborRequestStatusEnum = pgEnum('labor_request_status', ['pending', 'quoted', 'approved', 'rejected']); // New Enum for Labor Requests
+export const laborRequestProgressEnum = pgEnum('labor_request_progress', ['quote_sent', 'quote_accepted', 'timeline_developed', 'project_started', 'project_completed']); // New Enum for Progress
 
 // Tables
 export const users = pgTable('users', {
@@ -16,6 +18,14 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 256 }).notNull(),
   email: varchar('email', { length: 256 }).unique().notNull(),
   companyName: varchar('company_name', { length: 256 }),
+  ein: varchar('ein', { length: 256 }),
+  licenseNumber: varchar('license_number', { length: 256 }),
+  insuranceInfo: text('insurance_info'),
+  trades: text('trades'),
+  website: varchar('website', { length: 256 }),
+  description: text('description'),
+  brandColorPrimary: varchar('brand_color_primary', { length: 7 }).default('#710505'),
+  brandColorSecondary: varchar('brand_color_secondary', { length: 7 }).default('#f0f0f0'),
   passwordHash: text('password_hash').notNull(),
   role: userRoleEnum('role').notNull(),
   parentId: uuid('parent_id'),
@@ -27,6 +37,18 @@ export const contractorRequests = pgTable('contractor_requests', {
   clientId: uuid('client_id').notNull().references(() => users.id),
   adminId: uuid('admin_id').notNull().references(() => users.id),
   status: contractorRequestStatusEnum('status').default('pending').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const laborRequests = pgTable('labor_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  adminId: uuid('admin_id').notNull().references(() => users.id),
+  contractorId: uuid('contractor_id').notNull().references(() => users.id),
+  requestId: uuid('request_id').references(() => requests.id), // Optional: link to a client request
+  message: text('message').notNull(),
+  status: laborRequestStatusEnum('status').default('pending').notNull(),
+  progress: laborRequestProgressEnum('progress'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -91,6 +113,8 @@ export const quoteItems = pgTable('quote_items', {
 export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),
   contractorId: uuid('contractor_id').notNull().references(() => users.id),
+  clientId: uuid('client_id').references(() => users.id), // Link to a registered client/admin
+  clientEmail: varchar('client_email', { length: 256 }), // Fallback if no client selected
   requestId: uuid('request_id').references(() => requests.id),
   projectName: varchar('project_name', { length: 256 }),
   description: text('description').notNull(),
@@ -147,6 +171,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   quotes: many(quotes),
   contractorRequestsAsClient: many(contractorRequests, { relationName: 'client_requests' }),
   contractorRequestsAsAdmin: many(contractorRequests, { relationName: 'admin_requests' }),
+  laborRequestsAsAdmin: many(laborRequests, { relationName: 'admin_labor_requests' }),
+  laborRequestsAsContractor: many(laborRequests, { relationName: 'contractor_labor_requests' }),
 }));
 
 export const contractorRequestsRelations = relations(contractorRequests, ({ one }) => ({
@@ -154,11 +180,18 @@ export const contractorRequestsRelations = relations(contractorRequests, ({ one 
   admin: one(users, { fields: [contractorRequests.adminId], references: [users.id], relationName: 'admin_requests' }),
 }));
 
+export const laborRequestsRelations = relations(laborRequests, ({ one }) => ({
+  admin: one(users, { fields: [laborRequests.adminId], references: [users.id], relationName: 'admin_labor_requests' }),
+  contractor: one(users, { fields: [laborRequests.contractorId], references: [users.id], relationName: 'contractor_labor_requests' }),
+  request: one(requests, { fields: [laborRequests.requestId], references: [requests.id] }),
+}));
+
 export const requestsRelations = relations(requests, ({ one, many }) => ({
   client: one(users, { fields: [requests.clientId], references: [users.id] }),
   documents: many(documents),
   quotes: many(quotes),
   invoices: many(invoices),
+  laborRequests: many(laborRequests),
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
@@ -183,6 +216,7 @@ export const quoteItemsRelations = relations(quoteItems, ({ one }) => ({
 
 export const invoicesRelations = relations(invoices, ({ one }) => ({
   contractor: one(users, { fields: [invoices.contractorId], references: [users.id] }),
+  client: one(users, { fields: [invoices.clientId], references: [users.id] }), // Relation to client/admin
   request: one(requests, { fields: [invoices.requestId], references: [requests.id] }),
 }));
 

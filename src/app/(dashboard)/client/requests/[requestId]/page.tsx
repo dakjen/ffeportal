@@ -8,6 +8,16 @@ import { verifyToken } from '@/lib/auth-edge';
 import Link from 'next/link';
 import { Download, ArrowLeft, Clock } from 'lucide-react';
 
+interface QuoteItem {
+  id?: string;
+  serviceName: string;
+  description?: string;
+  price?: number;
+  unitPrice?: number;
+  quantity?: number;
+  pricingType?: 'hourly' | 'flat';
+}
+
 interface ClientQuoteViewPageProps {
   params: Promise<{ requestId: string }>;
 }
@@ -64,7 +74,7 @@ export default async function ClientQuoteViewPage({ params }: ClientQuoteViewPag
   const showQuote = quote && quote.status !== 'draft';
 
   // Fetch quote items only if quote is shown
-  let items: any[] = [];
+  let items: QuoteItem[] = [];
   if (showQuote) {
     items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
   }
@@ -137,9 +147,9 @@ export default async function ClientQuoteViewPage({ params }: ClientQuoteViewPag
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.serviceName}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{item.description || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseFloat(item.quantity).toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${parseFloat(item.unitPrice).toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">${parseFloat(item.price).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseFloat(String(item.quantity || 0)).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${parseFloat(String(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">${parseFloat(String(item.price || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -79,12 +79,12 @@ export default function LoginPage() {
           Login
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-400">
-        Don't have an account?{' '}
-        <Link href="/register" className="font-medium text-[var(--brand-beige)] hover:text-white">
-          Sign Up
-        </Link>
-      </p>
+          <p className="mt-4 text-center text-sm text-gray-400">
+            Don&apos;t have an account?{' '}
+            <Link href="/register" className="font-medium text-[var(--brand-beige)] hover:text-white">
+              Sign Up
+            </Link>
+          </p>
     </div>
   );
 }

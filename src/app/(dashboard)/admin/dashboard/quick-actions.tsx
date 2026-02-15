@@ -66,8 +66,12 @@ export default function QuickActions({ pendingCount, clients }: QuickActionsProp
       // Redirect to the new standalone quote editor
       router.push(`/admin/quotes/${result.quote.id}`);
       
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
       setLoading(false);
     }
   };

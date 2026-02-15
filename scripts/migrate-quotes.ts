@@ -31,9 +31,9 @@ async function runMigration() {
     console.log('Adding foreign key constraint for client_id...');
     try {
         await client.query('ALTER TABLE "quotes" ADD CONSTRAINT "quotes_client_id_users_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."users"("id");');
-    } catch (e: any) {
+    } catch (e: unknown) {
         // If constraint already exists (error 42710), we can ignore it
-        if (e.code === '42710') {
+        if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: string }).code === '42710') {
             console.log('Constraint already exists, skipping.');
         } else {
             console.log('Note: Constraint creation failed (might already exist), checking if safe to proceed...');

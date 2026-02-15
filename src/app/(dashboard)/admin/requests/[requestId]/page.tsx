@@ -3,10 +3,20 @@ import { quotes, requests, users, quoteItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth-edge'; // Revert to auth-edge
+import { verifyToken } from '@/lib/auth-edge';
 import Link from 'next/link';
 import { Download, ArrowLeft, Edit, Plus } from 'lucide-react';
 import { getShortId } from '@/lib/pdf-generator';
+
+interface QuoteItem {
+  id?: string;
+  serviceName: string;
+  description?: string;
+  price?: number;
+  unitPrice?: number;
+  quantity?: number;
+  pricingType?: 'hourly' | 'flat';
+}
 
 interface AdminRequestDetailsPageProps {
   params: Promise<{ requestId: string }>;
@@ -48,7 +58,7 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
   const [quote] = await db.select().from(quotes).where(eq(quotes.requestId, requestId));
 
   // Fetch quote items only if quote exists
-  let items: any[] = [];
+  let items: QuoteItem[] = [];
   if (quote) {
     items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
   }
@@ -154,9 +164,9 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.serviceName}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{item.description || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseFloat(item.quantity).toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${parseFloat(item.unitPrice).toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">${parseFloat(item.price).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseFloat(String(item.quantity || 0)).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${parseFloat(String(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">${parseFloat(String(item.price || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

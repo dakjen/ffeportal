@@ -1,7 +1,4 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +21,6 @@ interface SearchAdminsFormProps {
 }
 
 export default function SearchAdminsForm({ clientId }: SearchAdminsFormProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [requestError, setRequestError] = useState('');
@@ -63,8 +59,12 @@ export default function SearchAdminsForm({ clientId }: SearchAdminsFormProps) {
       if (result.admins.length === 0) {
         setSearchError('No administrators found matching your query.');
       }
-    } catch (err: any) {
-      setSearchError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setSearchError(err.message);
+      } else {
+        setSearchError('An unexpected error occurred during search.');
+      }
     } finally {
       setLoading(false);
     }
@@ -89,8 +89,12 @@ export default function SearchAdminsForm({ clientId }: SearchAdminsFormProps) {
       setSuccessMessage('Request sent successfully! The administrator will review your request.');
       setSelectedAdminId(null); // Clear selection after sending
       setAdmins([]); // Clear search results
-    } catch (err: any) {
-      setRequestError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setRequestError(err.message);
+      } else {
+        setRequestError('An unexpected error occurred while sending the request.');
+      }
     } finally {
       setLoading(false);
     }

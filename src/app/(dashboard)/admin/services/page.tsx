@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, Edit2, DollarSign, Briefcase } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react'; // Removed Edit2, DollarSign, Briefcase
 
 const serviceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -18,12 +17,16 @@ const serviceSchema = z.object({
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 
+// Interface for fetched Service data (includes id)
+interface Service extends ServiceFormValues {
+  id: string;
+}
+
 export default function AdminServicesPage() {
-  const [services, setServices] = useState<any[]>([]);
-  const [pricingEntries, setPricingEntries] = useState<any[]>([]); // New state
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null); // Changed to string | null
 
   const {
     register,
@@ -43,22 +46,20 @@ export default function AdminServicesPage() {
 
   const fetchServices = async () => {
     try {
-      const [servicesRes, pricingEntriesRes] = await Promise.all([ // Fetch pricing entries too
-        fetch('/api/admin/services'),
-        fetch('/api/admin/pricing-entries'),
-      ]);
+      const servicesRes = await fetch('/api/admin/services');
 
       if (!servicesRes.ok) throw new Error('Failed to fetch services');
-      if (!pricingEntriesRes.ok) throw new Error('Failed to fetch pricing entries'); // Error check for new fetch
 
       const servicesData = await servicesRes.json();
-      const pricingEntriesData = await pricingEntriesRes.json();
 
       setServices(servicesData.services);
-      setPricingEntries(pricingEntriesData.pricingEntries); // Set new state
-    } catch (err: any) {
+    } catch (err: unknown) { // Changed to unknown
       console.error('Failed to fetch data:', err); // Generalize error
-      setError(err.message);
+      if (err instanceof Error) { // Type check for Error
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ export default function AdminServicesPage() {
 
   const onAddService = async (data: ServiceFormValues) => {
     setAdding(true);
-    setError('');
+    setError(null); // Clear previous error
     try {
       const res = await fetch('/api/admin/services', {
         method: 'POST',
@@ -75,13 +76,16 @@ export default function AdminServicesPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to add service');
+        const errorData = await res.json(); // Assuming API returns JSON error
+        throw new Error(errorData.message || 'Failed to add service');
       }
 
       reset();
       fetchServices();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // Changed to unknown
+      if (err instanceof Error) { // Type check for Error
+        setError(err.message);
+      }
     } finally {
       setAdding(false);
     }
@@ -92,8 +96,13 @@ export default function AdminServicesPage() {
     try {
       await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
       fetchServices();
-    } catch (err) {
+    } catch (err: unknown) { // Changed to unknown
       console.error('Failed to delete service:', err);
+      if (err instanceof Error) { // Type check for Error
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     }
   };
 

@@ -16,11 +16,20 @@ const userSchema = z.object({
 
 type UserFormValues = z.infer<typeof userSchema>;
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'client' | 'contractor';
+  companyName: string | null;
+  createdAt: string; // Assuming createdAt is a string representing a date
+}
+
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formError, setFormError] = useState('');
 
   const {
@@ -37,7 +46,8 @@ export default function AdminUsersPage() {
     },
   });
 
-  const selectedRole = watch('role');
+  // 'selectedRole' is not used, can be removed
+  // const selectedRole = watch('role');
 
   useEffect(() => {
     fetchUsers();
@@ -50,8 +60,11 @@ export default function AdminUsersPage() {
         const data = await res.json();
         setUsers(data.users);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to fetch users:', err);
+      if (err instanceof Error) {
+        setFormError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,7 +77,7 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (user: any) => {
+  const openEditModal = (user: User) => {
     setEditingUser(user);
     setValue('name', user.name);
     setValue('email', user.email);
@@ -84,9 +97,9 @@ export default function AdminUsersPage() {
       
       const method = editingUser ? 'PUT' : 'POST';
 
-      const payload: any = { ...data };
+      const payload: UserFormValues = { ...data }; // Typed payload
       if (editingUser && !data.password) {
-        delete payload.password;
+        delete payload.password; // This needs to be handled carefully with UserFormValues
       }
 
       const res = await fetch(url, {
@@ -102,8 +115,12 @@ export default function AdminUsersPage() {
 
       setIsModalOpen(false);
       fetchUsers();
-    } catch (err: any) {
-      setFormError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setFormError(err.message);
+      } else {
+        setFormError('An unexpected error occurred.');
+      }
     }
   };
 
@@ -116,8 +133,12 @@ export default function AdminUsersPage() {
         throw new Error(err.message);
       }
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert('An unexpected error occurred.');
+      }
     }
   };
 

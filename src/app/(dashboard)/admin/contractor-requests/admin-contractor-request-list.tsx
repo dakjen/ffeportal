@@ -41,8 +41,12 @@ export default function AdminContractorRequestList({ initialRequests }: AdminCon
       // Update the status in the UI
       setRequests(prevRequests => prevRequests.filter(req => req.id !== requestId));
       router.refresh(); // Re-fetch server-side requests
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,7 +62,7 @@ export default function AdminContractorRequestList({ initialRequests }: AdminCon
       )}
 
       {requests.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No pending contractor link requests.</p>
+        <p className="text-gray-500 text-center py-8">No pending contractor requests.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {requests.map(request => (

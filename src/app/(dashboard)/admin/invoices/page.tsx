@@ -1,11 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { DollarSign, CheckCircle, XCircle } from 'lucide-react';
 
+interface Invoice {
+  id: string;
+  contractorName: string;
+  projectName: string | null;
+  description: string;
+  amount: string;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  createdAt: string;
+}
+
 export default function AdminInvoicesPage() {
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

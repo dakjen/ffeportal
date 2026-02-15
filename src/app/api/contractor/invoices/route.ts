@@ -9,6 +9,11 @@ const invoiceSchema = z.object({
   projectName: z.string().min(1, 'Project Name is required'),
   description: z.string().min(1, 'Description is required'),
   amount: z.coerce.number().min(0.01, 'Amount must be positive'),
+  clientId: z.string().nullable().optional(),
+  clientEmail: z.string().email('Invalid email').nullable().optional(),
+}).refine(data => data.clientId || data.clientEmail, {
+  message: "Either select a client or enter an email",
+  path: ["clientEmail"],
 });
 
 export async function POST(req: Request) {
@@ -28,6 +33,8 @@ export async function POST(req: Request) {
       description: data.description,
       amount: data.amount.toString(),
       status: 'pending',
+      clientId: data.clientId || null,
+      clientEmail: data.clientEmail || null,
     }).returning();
 
     return NextResponse.json({ message: 'Invoice submitted successfully', invoice: newInvoice }, { status: 201 });

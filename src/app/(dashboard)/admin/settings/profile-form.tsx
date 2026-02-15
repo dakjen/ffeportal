@@ -23,7 +23,13 @@ const passwordSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
-export default function ProfileForm({ user }: { user: any }) {
+interface User {
+  name: string;
+  email: string;
+  companyName: string | null;
+}
+
+export default function ProfileForm({ user }: { user: User }) {
   const router = useRouter();
   const [profileSuccess, setProfileSuccess] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
@@ -72,8 +78,12 @@ export default function ProfileForm({ user }: { user: any }) {
 
       setProfileSuccess('Profile updated successfully.');
       router.refresh();
-    } catch (err: any) {
-      setProfileError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setProfileError(err.message);
+      } else {
+        setProfileError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -100,8 +110,12 @@ export default function ProfileForm({ user }: { user: any }) {
 
       setPasswordSuccess('Password updated successfully.');
       resetPassword();
-    } catch (err: any) {
-      setPasswordError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setPasswordError(err.message);
+      } else {
+        setPasswordError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }

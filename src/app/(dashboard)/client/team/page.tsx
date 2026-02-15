@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react'; // Removed Plus
 
 const addUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -15,9 +14,14 @@ const addUserSchema = z.object({
 
 type AddUserFormValues = z.infer<typeof addUserSchema>;
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function TeamPage() {
-  const router = useRouter();
-  const [team, setTeam] = useState<any[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingUser, setAddingUser] = useState(false);
   const [error, setError] = useState('');
@@ -43,8 +47,13 @@ export default function TeamPage() {
         const data = await res.json();
         setTeam(data.team);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to fetch team:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -70,8 +79,12 @@ export default function TeamPage() {
       setSuccess('Team member added successfully!');
       reset();
       fetchTeam(); // Refresh list
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setAddingUser(false);
     }
