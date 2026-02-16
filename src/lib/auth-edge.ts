@@ -1,5 +1,5 @@
 // src/lib/auth-edge.ts
-import { jwtVerify } from 'jose';
+import { verify } from '@tsndr/cloudflare-worker-jwt';
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 
@@ -13,7 +13,6 @@ export async function verifyToken(token: string): Promise<UserPayload> {
   if (!jwtSecretEnv) {
     throw new Error('JWT_SECRET is not defined in environment variables');
   }
-  const secretKey = new TextEncoder().encode(jwtSecretEnv);
-  const { payload } = await jwtVerify(token, secretKey);
-  return payload as unknown as UserPayload;
+  const payload = await verify(token, jwtSecretEnv);
+  return payload as UserPayload;
 }
