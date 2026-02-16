@@ -14,7 +14,7 @@ export default function LandingPage() {
           <div className="hidden md:flex gap-8 text-sm font-medium">
             <Link href="#services" className="hover:text-[var(--brand-beige)] transition-colors">Services</Link>
             <Link href="/previous-projects" className="hover:text-[var(--brand-beige)] transition-colors">Previous Projects</Link>
-            <Link href="#about" className="hover:text-[var(--brand-beige)] transition-colors">About Us</Link>
+            <Link href="/about" className="hover:text-[var(--brand-beige)] transition-colors">About Us</Link>
           </div>
           <div className="flex gap-4">
             <Link href="/login" className="text-sm font-medium hover:text-[var(--brand-beige)] transition-colors py-2">
@@ -37,6 +37,7 @@ export default function LandingPage() {
             Elevating Spaces through <br />
             <span className="text-[var(--brand-beige)]">Expert FF&E Procurement</span>
           </h1>
+          <h3 className="text-xl md:text-2xl text-gray-400 font-medium mb-8 italic">The Design Domain, Done Right.</h3>
           <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             From concept to installation, we manage the entire lifecycle of furniture, fixtures, and equipment for hospitality, commercial, and residential projects.
           </p>

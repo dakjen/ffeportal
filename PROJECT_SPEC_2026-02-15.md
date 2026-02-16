@@ -1,83 +1,94 @@
-# DesignDomain Project Specification - 2026-02-15
+# Project Specification - DesignDomain
 
-This document outlines the current state and key functionalities of the DesignDomain portal, incorporating all features and modifications implemented as of 2026-02-15.
+## Date: February 15, 2026
 
----
+## 1. Introduction
 
-## 1. Core Application & Technologies
+This document outlines the current functionality, key features, and technical stack of the DesignDomain application. DesignDomain is a comprehensive platform designed to streamline project management, quoting, invoicing, and contractor/client interactions within a service-based business.
 
-*   **Framework:** Next.js (v16.1.6) App Router
-*   **Language:** TypeScript
-*   **Styling:** Tailwind CSS
-*   **Database:** PostgreSQL (with Drizzle ORM)
-*   **Authentication:** JWT-based authentication (jose, bcryptjs) with secure cookie management (httpOnly, secure, sameSite=Lax).
-*   **Form Management:** React Hook Form with Zod for schema validation.
-*   **PDF Generation:** `@react-pdf/renderer` for server-side PDF generation.
-*   **Notifications:** `sonner` for toast notifications (though not yet integrated into the UI).
+## 2. Core Functionality
 
-## 2. Authentication & User Management
+The application provides distinct dashboards and functionalities tailored for three primary user roles: Admin, Client, and Contractor.
 
-### 2.1 User Roles
-The system supports three primary user roles, each with distinct dashboards and access controls:
-*   **Admin:** Full access to manage users, services, pricing, requests, quotes, and contractor requests.
-*   **Client:** Can submit new requests, view current projects, view their team, and manage their profile.
-*   **Contractor:** Can view their dashboard, manage company information, and submit invoices.
+### 2.1 Admin Dashboard
 
-### 2.2 Login & Registration
-*   Secure login process with email/password authentication.
-*   Registration allows new users to create accounts. Roles can be assigned via URL parameters (e.g., `/register?role=contractor`).
-*   Client-side navigation after successful login, redirecting users to their role-specific dashboard (e.g., `/admin/dashboard`, `/client/dashboard`, `/contractor/dashboard`).
-*   Middleware protects routes based on authentication token and user role, redirecting unauthorized access to `/login`.
+-   **User Management**: View and manage user accounts.
+-   **Contractor Request Management**: Approve or deny contractor requests.
+-   **Invoice Management**: Create, view, and manage invoices.
+-   **Labor Request Management**: Handle and assign labor requests.
+-   **Pricing Management**: Manage pricing entries for services.
+-   **Quote Management**: Create, view, and manage quotes, including PDF generation.
+-   **Service Management**: Manage available services.
+-   **System Settings**: Configure application-wide settings and profiles.
+-   **Project Management**: Oversee client projects and requests.
 
-## 3. Request & Quote Management
+### 2.2 Client Dashboard
 
-### 3.1 Client Request Submission
-*   Clients can submit new project requests, providing details about their FF&E needs.
+-   **Project Overview**: View current projects and their status.
+-   **New Project Creation**: Initiate new service projects.
+-   **Service Request**: Submit new requests for services.
+-   **Contractor Request**: Request specific contractors for projects.
+-   **Settings**: Manage client profile and account settings.
+-   **Team Management**: Manage team members (if applicable).
+-   **Document Management**: Access project-related documents.
 
-### 3.2 Admin Request & Quote Building
-*   Admins can view and manage client requests.
-*   **Quote Builder Page (`/admin/requests/[requestId]/quote`):**
-    *   Allows admins to build quotes for specific client requests.
-    *   Integrates a service catalog for adding predefined services.
-    *   Supports adding **custom items**, with the service name field initially blank for immediate input.
-    *   Features drag-and-drop reordering of quote items (via Dnd Kit).
-    *   Calculates net price, tax amount (based on adjustable tax rate), delivery fee, and total price.
-    *   **"Edit vs. View" Logic:** Displays quotes as editable if their status is `draft`. For quotes with `sent`, `approved`, or `revised` status, the page renders as largely read-only, disabling input fields and action buttons (e.g., "Add to Quote", "Save Draft", "Send Quote").
-    *   Allows saving quotes as `draft` or changing status to `sent`.
-    *   Supports deleting quotes (if not sent).
-    *   Displays the request details, client information, and quote items.
-    *   **Quote ID Display:** Displays a truncated 6-character version of the Quote ID (e.g., `xxxxxx`).
-    *   Displays the "Quote Created" date and time in the Quote Summary section.
+### 2.3 Contractor Dashboard
 
-### 3.3 Quote PDF Generation & Download
-*   Admins (and clients if authorized) can download quotes as PDFs.
-*   **Filename Format:** Downloaded PDFs are named `DesignDomainLLC-Quote-YYYY-MM-DD-xxxxxx.pdf` (where `xxxxxx` is the 6-character short quote ID).
-*   **PDF Internal Title:** The PDF document itself has an internal title set to `Quote - [Project Name] - [Short Quote ID]`.
-*   **Technology:** Uses `@react-pdf/renderer` for robust, React-component-based PDF generation in the Node.js runtime.
-*   The API route (`/api/quotes/[quoteId]/pdf`) is explicitly configured to run in the `nodejs` runtime to ensure compatibility with `react-pdf/renderer`'s dependencies.
+-   **Accepted Quotes**: View and manage accepted quotes.
+-   **Invoice Creation**: Create invoices for completed work.
+-   **Labor Request Handling**: Respond to and manage labor requests.
+-   **Settings**: Manage contractor profile and account settings.
+-   **Subcontractor Requests**: Manage requests for subcontractors.
+-   **Admin Connections**: Manage connections with administrators.
 
-## 4. Contractor Management
+## 3. Key Features
 
-### 4.1 Contractor Company Information (`/contractor/settings`)
-*   Contractors have a dedicated page to manage and update their company information (Name, Company Name).
-*   Form uses `react-hook-form` and `zod` for validation.
-*   Updates are handled via a `PUT /api/contractor/profile` endpoint.
+### 3.1 Authentication & Authorization
 
-### 4.2 Client Request to Become Contractor
-*   **Database Schema:** New `contractorRequests` table (`clientId`, `adminId`, `status`, `createdAt`, `updatedAt`) added to `src/db/schema.ts`, along with a `contractorRequestStatusEnum` (`pending`, `approved`, `rejected`).
-*   **Client-side (`/client/request-contractor`):** Clients can search for administrators by name or email.
-*   Clients can send a request to an admin to be linked as a contractor.
-*   **Admin-side (`/admin/contractor-requests`):** Admins can view pending requests from clients.
-*   Admins can `approve` or `reject` these requests.
-    *   Upon approval, the client's `role` in the `users` table is changed to `contractor`, and their `parentId` is set to the approving admin's ID.
-*   Navigation links added for both client and admin roles.
+-   User login, registration, and logout.
+-   Role-based access control for Admin, Client, and Contractor.
+-   Secure authentication processes (likely using `next-auth` or similar).
 
-## 5. Database Schema Enhancements (quotes table)
+### 3.2 PDF Generation
 
-*   **`version` field:** Added to the `quotes` table (varchar, default '1.0') to track quote versions.
-*   **`sentAt` field:** Added to the `quotes` table (timestamp) to record when a quote was sent.
-*   The Drizzle ORM schema (`src/db/schema.ts`) reflects these changes, and the database has been successfully updated via `drizzle-kit push`.
+-   Generation of PDF documents for quotes and invoices (`src/lib/pdf-generator.tsx`, `src/lib/invoice-generator.ts`).
+-   Client-side PDF generation utilities (`src/utils/client-pdf-generator.ts`).
 
----
+### 3.3 API Endpoints
 
-This document should serve as a comprehensive overview of the current application state.
+A comprehensive set of API endpoints are available, categorized by user role (Admin, Client, Contractor) and functionality:
+
+-   **Admin API**: Endpoints for managing contractor requests, invoices, labor requests, pricing, quotes, services, and users.
+-   **Client API**: Endpoints for projects, quotes, requests, contractor linking, and team management.
+-   **Contractor API**: Endpoints for connected admins, invoices, profile management, and admin requests.
+-   **General API**: Endpoints for authentication (login, register, logout), contact forms, sending emails, and user profile management.
+
+### 3.4 Database & Schema
+
+-   Relational database management, likely using Drizzle ORM given the `drizzle` directory and `drizzle.config.ts`.
+-   Schema definitions for various entities (`src/db/schema.ts`).
+-   Database migrations are managed through Drizzle (`drizzle/*.sql`).
+
+### 3.5 Styling & UI
+
+-   Modern web application interface.
+-   Global styling defined in `src/app/globals.css`.
+-   Responsive design for various devices.
+
+### 3.6 Helper Utilities
+
+-   Authentication utilities for edge and server environments (`src/lib/auth-edge.ts`, `src/lib/auth-server.ts`).
+-   Various scripts for database migrations and data checks (`scripts/`).
+
+## 4. Technologies Used
+
+-   **Framework**: Next.js (React)
+-   **Styling**: PostCSS (tailwind.css likely used given `postcss.config.mjs`)
+-   **Database ORM**: Drizzle ORM
+-   **Database**: (Inferred from Drizzle migrations, likely PostgreSQL or similar)
+-   **Authentication**: (Inferred from auth files, potentially NextAuth.js or custom implementation)
+-   **TypeScript**: Primary language for development.
+
+## 5. Future Considerations
+
+(This section can be populated as the project evolves with new requirements or features.)
