@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { verifyPassword, createToken } from '@/lib/auth';
+import { verifyPassword, createToken } from '@/lib/auth-server';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';

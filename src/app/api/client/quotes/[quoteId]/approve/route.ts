@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { quotes, notifications, users, requests } from '@/db/schema'; // Added requests to schema import
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth'; // Changed from auth-edge
+import { verifyToken } from '@/lib/auth-server'; // Changed from auth-edge
 
 export async function POST(
   req: Request,

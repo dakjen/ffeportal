@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth-server';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 

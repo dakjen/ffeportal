@@ -5,7 +5,7 @@ import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth-server';
 
 const addUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
