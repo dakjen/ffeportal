@@ -99,8 +99,8 @@ export default function AboutPage() {
               <p className="text-lg text-gray-600">Co-Founder</p>
               <p className="text-base text-gray-500 mt-1">CEO of DakJen Creative LLC</p>
               <p className="text-base text-gray-500 mt-2">Expertise in design operations and creative execution.</p>
-            </div>
-          </div>
+            </div> {/* Closing div for Dakotah's card */}
+          </div> {/* Closing div for the grid container */}
         </section>
 
       </div>
