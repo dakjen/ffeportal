@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 export default function AboutPage() {
   return (
@@ -24,6 +24,23 @@ export default function AboutPage() {
               <p className="text-lg text-white/90 mb-8 leading-relaxed">
                 We manage every aspect of the process—from sourcing and logistics to installation and design placement—ensuring each project is efficient, cohesive, and tailored to client needs. Whether furnishing entire apartment communities or curating spaces for boutique offices and staged units, our team delivers elevated, cost-effective solutions that align with both design vision and development timelines. Design Domain LLC provides end-to-end furniture procurement and design solutions for developers, businesses, and real estate professionals. We manage every phase of the furnishing process with precision, style, and efficiency.
               </p>
+              <p className="text-lg text-white/90 mb-8 leading-relaxed">
+                We understand that procurement is more than just buying furniture. It&apos;s about translating a design vision into reality, on time and on budget.
+              </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
+                <p>Global supplier network with exclusive trade pricing.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
+                <p>Dedicated project managers for every account.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
+                <p>Transparent, real-time tracking through our client portal.</p>
+              </div>
+            </div>
             </div>
             <div className="md:w-1/2 relative h-96 w-full rounded-2xl overflow-hidden">
               <Image
@@ -51,36 +68,40 @@ export default function AboutPage() {
           <p className="text-lg text-gray-300 mb-8 text-center max-w-2xl mx-auto">
             Our dedicated team brings a wealth of experience in design, procurement, and project management to ensure your vision is realized seamlessly.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center">
-            {/* Team Member 1: Gina Merritt */}
-            <div className="bg-white p-6 rounded-xl shadow-md flex flex-col items-center">
-              <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-[var(--brand-red)] bg-gray-300"> {/* Re-added bg-gray-300 */}
-                <Image
-                  src="/GinaMHeadshot1.png" // Reverted to actual image name
-                  alt="Gina Merritt Headshot"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <h3 className="text-xl font-bold text-[var(--brand-black)]">Dr. Gina Merritt</h3>
-              <p className="text-gray-600">Co-Founder, NREUV Advisors</p>
-              <p className="text-gray-500 text-sm mt-2">Expertise in real estate development and operations.</p>
-            </div>
-
-            {/* Team Member 2: Dakotah Jennifer */}
-            <div className="bg-white p-6 rounded-xl shadow-md flex flex-col items-center">
-              <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-[var(--brand-beige)]">
-                <Image
-                  src="/dakotahj-headshot.png" // Actual headshot
-                  alt="Dakotah Jennifer Headshot"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <h3 className="text-xl font-bold text-[var(--brand-black)]">Dakotah Jennifer</h3>
-              <p className="text-gray-600">Co-Founder, DakJen Creative LLC</p>
-              <p className="text-gray-500 text-sm mt-2">Expertise in design operations and creative execution.</p>
-            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center justify-center">                          {/* Team Member 1: Gina Merritt */}
+          <div className="flex justify-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center">
+                          {/* Team Member 1: Gina Merritt */}
+                          <div className="bg-white p-6 rounded-xl shadow-md flex flex-col items-center max-w-sm mx-auto">
+                            <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-[var(--brand-red)]">
+                              <Image
+                                src="/ginamerrittheadshot4.png" // Updated image name
+                                alt="Gina Merritt Headshot"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <h3 className="text-xl font-bold text-[var(--brand-black)]">Dr. Gina Merritt</h3>
+                            <p className="text-gray-600">Co-Founder</p>
+                            <p className="text-gray-500 text-sm mt-1">Principal of NREUV</p>
+                            <p className="text-gray-500 text-sm mt-2">Expertise in real estate development and operations.</p>
+                          </div>
+            
+                          {/* Team Member 2: Dakotah Jennifer */}
+                          <div className="bg-white p-6 rounded-xl shadow-md flex flex-col items-center max-w-sm mx-auto">
+                            <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-[var(--brand-beige)]">
+                              <Image
+                                src="/dakotahj-headshot.png" // Actual headshot
+                                alt="Dakotah Jennifer Headshot"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <h3 className="text-xl font-bold text-[var(--brand-black)]">Dakotah Jennifer</h3>
+                            <p className="text-gray-600">Co-Founder</p>
+                            <p className="text-gray-500 text-sm mt-1">CEO of DakJen Creative LLC</p>
+                            <p className="text-gray-500 text-sm mt-2">Expertise in design operations and creative execution.</p>
+                          </div>            </div>
           </div>
         </section>
 
