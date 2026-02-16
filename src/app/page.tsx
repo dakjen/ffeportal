@@ -13,7 +13,7 @@ export default function LandingPage() {
           </div>
           <div className="hidden md:flex gap-8 text-sm font-medium">
             <Link href="#services" className="hover:text-[var(--brand-beige)] transition-colors">Services</Link>
-            <Link href="#process" className="hover:text-[var(--brand-beige)] transition-colors">Process</Link>
+            <Link href="/previous-projects" className="hover:text-[var(--brand-beige)] transition-colors">Previous Projects</Link>
             <Link href="#about" className="hover:text-[var(--brand-beige)] transition-colors">About Us</Link>
           </div>
           <div className="flex gap-4">
@@ -64,18 +64,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-[var(--brand-red)] font-semibold text-sm uppercase tracking-wider mb-2">What We Do</h2>
-            <h3 className="text-4xl font-bold text-[var(--brand-black)]"> comprehensive FF&E Solutions</h3>
+            <h3 className="text-4xl font-bold text-[var(--brand-black)]">Our Core Services</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Service 1 */}
             <div className="group p-8 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
               <div className="w-12 h-12 bg-[var(--brand-beige)] rounded-lg flex items-center justify-center mb-6 text-white">
                 <LayoutTemplate className="h-6 w-6" />
               </div>
-              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Space Planning & Design</h4>
+              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Furniture Procurement & Sourcing</h4>
               <p className="text-gray-600 leading-relaxed">
-                We optimize layouts for functionality and aesthetics, ensuring every square foot works for your vision.
+                Curated, cost-efficient selections tailored to each project.
               </p>
             </div>
 
@@ -84,9 +84,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-[var(--brand-red)] rounded-lg flex items-center justify-center mb-6 text-white">
                 <PenTool className="h-6 w-6" />
               </div>
-              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Procurement Management</h4>
+              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Design Consultation & Space Planning</h4>
               <p className="text-gray-600 leading-relaxed">
-                Sourcing, negotiating, and purchasing from a vast network of global suppliers to get you the best value.
+                Cohesive layouts that balance style and utility.
               </p>
             </div>
 
@@ -95,9 +95,20 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-[var(--brand-black)] rounded-lg flex items-center justify-center mb-6 text-white">
                 <Truck className="h-6 w-6" />
               </div>
-              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Logistics & Installation</h4>
+              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Logistics & Delivery Management</h4>
               <p className="text-gray-600 leading-relaxed">
-                Coordinating shipping, warehousing, and white-glove installation to ensure a flawless final reveal.
+                Coordinated shipping, installation, and setup.
+              </p>
+            </div>
+            
+            {/* Service 4 */}
+            <div className="group p-8 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 bg-[var(--brand-beige)] rounded-lg flex items-center justify-center mb-6 text-white">
+                <Users className="h-6 w-6" /> {/* Reusing Users icon or can pick another */}
+              </div>
+              <h4 className="text-xl font-bold text-[var(--brand-black)] mb-3">Vendor & Supply Chain Management</h4>
+              <p className="text-gray-600 leading-relaxed">
+                Nationwide access to trusted manufacturers and distributors.
               </p>
             </div>
           </div>
@@ -108,31 +119,22 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-[var(--brand-beige)] text-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
           <div className="md:w-1/2">
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-2 text-white/80">Why Choose DesignDomain</h2>
-            <h3 className="text-4xl font-bold mb-6">Experience the Difference in Every Detail.</h3>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-2 text-white/80">About Us</h2>
+            <h3 className="text-4xl font-bold mb-6">Design Domain LLC</h3>
             <p className="text-lg text-white/90 mb-8 leading-relaxed">
-              We understand that procurement is more than just buying furniture. It&apos;s about translating a design vision into reality, on time and on budget.
+              Design Domain LLC is a full-service furniture procurement and design firm specializing in furnishing solutions for multifamily developments, small businesses, and real estate professionals. Founded through a partnership between NREUV Advisors and DakJen Creative LLC, Design Domain combines large-scale industry expertise with boutique-level attention to detail.
             </p>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
-                <p>Global supplier network with exclusive trade pricing.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
-                <p>Dedicated project managers for every account.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-6 w-6 text-[var(--brand-black)] mt-1 flex-shrink-0" />
-                <p>Transparent, real-time tracking through our client portal.</p>
-              </div>
-            </div>
+            <p className="text-lg text-white/90 mb-8 leading-relaxed">
+              We manage every aspect of the process—from sourcing and logistics to installation and design placement—ensuring each project is efficient, cohesive, and tailored to client needs. Whether furnishing entire apartment communities or curating spaces for boutique offices and staged units, our team delivers elevated, cost-effective solutions that align with both design vision and development timelines. Design Domain LLC provides end-to-end furniture procurement and design solutions for developers, businesses, and real estate professionals. We manage every phase of the furnishing process with precision, style, and efficiency.
+            </p>
           </div>
-          <div className="md:w-1/2 relative h-96 w-full rounded-2xl overflow-hidden bg-[var(--brand-black)]/10">
-             {/* Placeholder for an image */}
-             <div className="absolute inset-0 flex items-center justify-center text-white/20 text-4xl font-bold border-2 border-white/20 m-4 rounded-xl">
-               Interior Space
-             </div>
+          <div className="md:w-1/2 relative h-96 w-full rounded-2xl overflow-hidden">
+            <Image
+              src="/hough1.jpg" // Assuming hough1.jpg is in the public directory
+              alt="Interior space design"
+              fill
+              className="object-cover rounded-2xl"
+            />
           </div>
         </div>
       </section>
@@ -163,9 +165,8 @@ export default function LandingPage() {
             Design<span className="text-[var(--brand-beige)]">Domain</span>
           </div>
           <div className="flex gap-8 text-sm">
-            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="#" className="hover:text-white transition-colors">Contact Support</Link>
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/contact" className="hover:text-white transition-colors">Contact Support</Link>
           </div>
           <div className="text-sm">
             &copy; {new Date().getFullYear()} DesignDomain. All rights reserved.

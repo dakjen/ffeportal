@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { contactSubmissions, users } from '@/db/schema'; // Ensure users is imported here if directly used
+import { eq, desc } from 'drizzle-orm';
 import ProfileForm from './profile-form';
+import AdminContactSubmissions from './admin-contact-submissions'; // Import the new client component
 
 export default async function AdminSettingsPage() {
   const token = (await cookies()).get('auth_token')?.value;
@@ -30,6 +31,12 @@ export default async function AdminSettingsPage() {
     redirect('/login');
   }
 
+  // Fetch unresolved contact submissions
+  const submissions = await db.select()
+    .from(contactSubmissions)
+    .where(eq(contactSubmissions.isResolved, false))
+    .orderBy(desc(contactSubmissions.createdAt));
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -46,6 +53,9 @@ export default async function AdminSettingsPage() {
           <ProfileForm user={user} />
         </div>
       </div>
+
+      <AdminContactSubmissions initialSubmissions={submissions} />
     </div>
   );
 }
+

@@ -157,6 +157,16 @@ export const pricingEntries = pgTable('pricing_entries', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const contactSubmissions = pgTable('contact_submissions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 256 }).notNull(),
+  email: varchar('email', { length: 256 }).notNull(),
+  subject: varchar('subject', { length: 256 }).notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  isResolved: boolean('is_resolved').default(false).notNull(),
+});
+
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
   clientId: uuid('client_id').notNull().references(() => users.id),
