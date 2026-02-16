@@ -4,12 +4,7 @@ import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not defined in environment variables');
-}
 
 // Hashing Passwords
 export async function hashPassword(password: string): Promise<string> {
@@ -29,6 +24,10 @@ interface UserPayload {
 }
 
 export async function createToken(payload: UserPayload): Promise<string> {
+  const JWT_SECRET = process.env.JWT_SECRET!;
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
   const iat = Math.floor(Date.now() / 1000);
   const exp = iat + (60 * 60 * 24); // 1 day
 
@@ -40,6 +39,10 @@ export async function createToken(payload: UserPayload): Promise<string> {
 }
 
 export async function verifyToken(token: string): Promise<UserPayload> {
+  const JWT_SECRET = process.env.JWT_SECRET!;
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
   const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
 
   // Explicitly check for and extract the properties
