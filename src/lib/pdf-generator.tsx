@@ -37,7 +37,7 @@ export interface QuoteItem {
 
 export interface QuoteDetails {
   id: string;
-  version?: string;
+  version?: string; // Optional
   netPrice: number;
   taxRate: number;
   taxAmount: number;
@@ -46,10 +46,11 @@ export interface QuoteDetails {
   projectName: string;
   clientName: string;
   clientCompanyName?: string;
+  clientEmail?: string; // Added clientEmail to interface
   logoPath?: string; // Absolute URL or base64
-  paymentTerms?: string; // e.g., 'Net 30'
-  servicesNarrative?: string;
-  sentAt?: Date; // Exact time quote was sent
+  paymentTerms?: string; // Optional
+  servicesNarrative?: string; // Optional
+  sentAt?: Date; // Optional
   items: QuoteItem[];
 }
 
@@ -81,12 +82,13 @@ const quoteStyles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     color: '#710505',
     letterSpacing: 1,
+    marginBottom: 5, // Increased margin-bottom
   },
   quoteInfo: {
     alignItems: 'flex-end',
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 5, // Reduced space between sections
   },
   sectionTitle: {
     fontSize: 12,
@@ -108,8 +110,7 @@ const quoteStyles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#710505',
   },
-  table: {
-    display: 'table',
+  table: { // Removed display: 'table'
     width: 'auto',
     marginBottom: 10,
   },
@@ -180,19 +181,20 @@ const QuoteDocument = ({ quoteDetails }: { quoteDetails: QuoteDetails }) => (
       <View style={quoteStyles.header}>
         <View>
           {quoteDetails.logoPath && (
-            <Image src={quoteDetails.logoPath} style={quoteStyles.logo} alt="Company Logo" />
+            <Image src={quoteDetails.logoPath} style={quoteStyles.logo} />
           )}
-          <Text style={quoteStyles.companyTitle}>DesignDomain LLC</Text>
-          <Text>Professional Design Services</Text>
-          <Text>quote@designdomainllc.com</Text>
+          <Text style={quoteStyles.companyTitle}>DesignDomain LLC</Text><Text style={{ fontSize: 10, marginTop: 10 }}>Professional Design Services</Text><Text style={{ fontSize: 10, marginTop: 5 }}>quote@designdomainllc.com</Text>
         </View>
 
         <View style={quoteStyles.quoteInfo}>
           <Text style={{ fontSize: 10, color: '#777777' }}>
             Quote ID: {getShortId(quoteDetails.id)}
           </Text>
+          <Text style={{ fontSize: 10, color: '#710505', fontFamily: 'Helvetica-Bold', marginTop: 5 }}>
+            TOTAL: {formatCurrency(quoteDetails.totalPrice)}
+          </Text>
           {quoteDetails.version && (
-            <Text style={{ fontSize: 9, color: '#ac8d79' }}>
+            <Text style={{ fontSize: 9, color: '#ac8d79', marginTop: 5 }}>
               Version: {quoteDetails.version}
             </Text>
           )}
@@ -218,22 +220,29 @@ const QuoteDocument = ({ quoteDetails }: { quoteDetails: QuoteDetails }) => (
       <View style={quoteStyles.section}>
         <Text style={quoteStyles.sectionTitle}>Client Details</Text>
         <View style={quoteStyles.clientDetails}>
-          <Text>Name: {quoteDetails.clientName}</Text>
-          {quoteDetails.clientCompanyName && (
-            <Text>Company: {quoteDetails.clientCompanyName}</Text>
+          <Text>Company: {quoteDetails.clientCompanyName || quoteDetails.clientName}</Text> {/* Display company, fallback to name */}
+          {quoteDetails.clientEmail && (
+            <Text>Email: {quoteDetails.clientEmail}</Text>
           )}
+          <Text>Project: {quoteDetails.projectName}</Text>
         </View>
       </View>
 
-      {/* Services Narrative */}
-      {quoteDetails.servicesNarrative && (
-        <View style={quoteStyles.section}>
-          <Text style={quoteStyles.sectionTitle}>Services Overview</Text>
-          <Text style={quoteStyles.servicesNarrative}>
-            {quoteDetails.servicesNarrative}
-          </Text>
-        </View>
-      )}
+      {/* Professional Narrative */}
+      <View style={quoteStyles.section}>
+        <Text style={quoteStyles.sectionTitle}>About Us</Text>
+        <Text style={quoteStyles.servicesNarrative}>
+          Design Domain LLC provides full-service FF&E procurement, sourcing furniture, technology, and equipment aligned with your design vision, functional needs, and budget. We leverage design and ease to secure pricing typically 20–50% below retail while managing vendor coordination, logistics, and delivery to ensure a seamless experience.
+        </Text>
+      </View>
+
+      {/* Scope of Work */}
+      <View style={quoteStyles.section}>
+        <Text style={quoteStyles.sectionTitle}>Scope of Work</Text>
+        <Text style={quoteStyles.servicesNarrative}>
+          This quote may include sourcing, procurement coordination, vendor communication, order management, and delivery coordination if applicable.
+        </Text>
+      </View>
 
       {/* Items Table */}
       <View style={quoteStyles.table}>

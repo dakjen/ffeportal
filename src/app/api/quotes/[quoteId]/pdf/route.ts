@@ -78,22 +78,21 @@ export async function GET(
       id: quote.id,
       projectName: requestData?.projectName || quote.projectName || 'Unnamed Project',
       clientName: clientData?.name || 'Unknown Client',
-      clientCompanyName: clientData?.companyName,
+      clientCompanyName: clientData?.companyName || undefined,
+      clientEmail: clientData?.email || undefined, // Added clientEmail
+      logoPath: '/icon.png', // Placeholder for now, replace with actual logo path
       netPrice: parseFloat(quote.netPrice),
       taxRate: parseFloat(quote.taxRate || '0'),
       taxAmount: parseFloat(quote.taxAmount || '0'),
       deliveryFee: parseFloat(quote.deliveryFee || '0'),
       totalPrice: parseFloat(quote.totalPrice),
-      version: quote.version || undefined,
-      paymentTerms: quote.paymentTerms || undefined,
-      servicesNarrative: quote.servicesNarrative || undefined,
       sentAt: quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt), 
 
       items: quoteItemsData.map(item => ({
         serviceName: item.serviceName,
-        description: item.description || undefined,
+        description: item.description || undefined, // Convert null to undefined for QuoteItem
         quantity: parseFloat(item.quantity),
-        unitPrice: parseFloat(item.unitPrice || '0'),
+        unitPrice: parseFloat(item.unitPrice || '0'), // Convert null to '0' then parse
         price: parseFloat(item.price),
       })),
     };
@@ -102,11 +101,11 @@ export async function GET(
     const pdfBuffer = await generateQuotePdf(quoteDetails);
 
     const formattedDate = new Date(quote.createdAt).toISOString().split('T')[0];
-    const shortQuoteId = getShortId(quote.id);
+    const shortQuoteId = quote.id.substring(0, 6);
     const filename = `DesignDomainLLC-Quote-${formattedDate}-${shortQuoteId}.pdf`;
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), { // Wrap Buffer in Uint8Array
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,

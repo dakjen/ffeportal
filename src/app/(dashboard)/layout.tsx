@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { LogOut, LayoutDashboard, ClipboardList, Users, Plus, DollarSign, Settings, FileText, UserPlus } from 'lucide-react'; // Added Settings icon
@@ -146,7 +146,9 @@ export default function DashboardLayout({
 
       {/* Main content area */}
       <main className="max-w-7xl mx-auto p-6">
-        {children}
+        <Suspense fallback={<div>Loading...</div>}>
+          {children}
+        </Suspense>
       </main>
     </div>
   );

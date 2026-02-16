@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UploadCloud, PlusCircle, FileText, XCircle, Loader2 } from 'lucide-react';
+import { LinkIcon, PlusCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ const newRequestSchema = z.object({
   projectName: z.string().min(1, 'Project Name is required'),
   projectLocation: z.string().min(1, 'Project Location is required').optional(),
   description: z.string().min(1, 'Description is required'),
+  documentUrls: z.array(z.string().url('Invalid URL format')).optional(), // New: Optional array of URLs
 }).refine(data => data.projectId || (data.projectName && data.projectLocation), {
   message: 'Either select an existing project or provide a new project name and location',
   path: ['projectName'],
@@ -36,8 +37,8 @@ export default function NewRequestForm() {
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [fetchingProjects, setFetchingProjects] = useState(true);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [documentUrls, setDocumentUrls] = useState<string[]>([]); // Changed from selectedFiles
+  const [newUrlInput, setNewUrlInput] = useState(''); // State for the new URL input field
 
   const {
     register,
@@ -47,6 +48,9 @@ export default function NewRequestForm() {
     watch,
   } = useForm<NewRequestFormValues>({
     resolver: zodResolver(newRequestSchema),
+    defaultValues: {
+      documentUrls: [], // Initialize documentUrls
+    },
   });
 
   const selectedProjectId = watch('projectId');
@@ -92,28 +96,22 @@ export default function NewRequestForm() {
     }
   }, [selectedProjectId, projects, setValue]);
 
-  // Handle file selection
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
+  // Handle adding a new URL
+  const handleAddUrl = useCallback(() => {
+    if (newUrlInput && z.string().url().safeParse(newUrlInput).success) {
+      setDocumentUrls((prev) => [...prev, newUrlInput]);
+      setNewUrlInput('');
+      setValue('documentUrls', [...documentUrls, newUrlInput]); // Update form state
+    } else if (newUrlInput) {
+      toast.error('Please enter a valid URL.');
     }
-  }, []);
+  }, [newUrlInput, documentUrls, setValue]);
 
-  // Handle drag and drop
-  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files);
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
-    }
-  }, []);
-
-  // Handle removing a selected file
-  const handleRemoveFile = useCallback((fileToRemove: File) => {
-    setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
-  }, []);
+  // Handle removing a URL
+  const handleRemoveUrl = useCallback((urlToRemove: string) => {
+    setDocumentUrls((prev) => prev.filter((url) => url !== urlToRemove));
+    setValue('documentUrls', documentUrls.filter((url) => url !== urlToRemove)); // Update form state
+  }, [documentUrls, setValue]);
 
   const onSubmit = async (data: NewRequestFormValues) => {
     setLoading(true);
@@ -150,12 +148,12 @@ export default function NewRequestForm() {
       const response = await fetch('/api/client/requests', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          projectId: finalProjectId,
-          projectName: data.projectName,
-          description: data.description,
+            projectId: finalProjectId,
+            projectName: data.projectName,
+            description: data.description,
         }),
       });
 
@@ -166,26 +164,25 @@ export default function NewRequestForm() {
       }
       newRequestId = result.request.id;
 
-      // --- File Upload Logic ---
-      if (selectedFiles.length > 0) {
-        setUploadingFiles(true);
-        const formData = new FormData();
-        formData.append('requestId', newRequestId);
-        selectedFiles.forEach((file) => {
-          formData.append('files', file);
-        });
-
-        const uploadRes = await fetch('/api/client/documents', {
+      // --- Document URL Submission Logic ---
+      if (documentUrls.length > 0) {
+        const docUploadRes = await fetch('/api/client/documents', {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            requestId: newRequestId,
+            documentUrls: documentUrls,
+          }),
         });
 
-        if (!uploadRes.ok) {
-          const uploadErrorData = await uploadRes.json();
-          console.error('Failed to upload documents:', uploadErrorData.message);
-          toast.error('Request submitted, but some documents failed to upload.');
+        if (!docUploadRes.ok) {
+          const docErrorData = await docUploadRes.json();
+          console.error('Failed to submit document URLs:', docErrorData.message);
+          toast.error('Request submitted, but some document URLs failed to link.');
         } else {
-          toast.success('Documents uploaded successfully!');
+          toast.success('Document URLs linked successfully!');
         }
       }
 
@@ -197,7 +194,6 @@ export default function NewRequestForm() {
       console.error(err);
     } finally {
       setLoading(false);
-      setUploadingFiles(false);
     }
   };
 
@@ -291,45 +287,46 @@ export default function NewRequestForm() {
               )}
             </div>
 
-            {/* File Upload Component */}
+            {/* Document URL Input Component */}
             <div>
               <label className="block text-sm font-semibold text-[var(--brand-black)] mb-2">
-                Attach Documents (Optional)
+                Attach Document Links (Optional)
               </label>
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer"
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
+              <div className="flex gap-2">
                 <input
-                  id="file-input"
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".pdf, .jpg, .jpeg, .png, .gif, .doc, .docx, .xls, .xlsx"
+                  type="url"
+                  value={newUrlInput}
+                  onChange={(e) => setNewUrlInput(e.target.value)}
+                  className="flex-grow border border-gray-300 rounded-lg shadow-sm p-3 text-gray-900 focus:ring-[var(--brand-red)] focus:border-[var(--brand-red)] transition-colors"
+                  placeholder="Paste a link to your document (e.g., Google Drive, Dropbox)"
                 />
-                <UploadCloud className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-gray-600">Drag and drop files here, or click to browse</p>
-                <p className="text-xs text-gray-400 mt-1">Supports PDF, JPG, PNG, GIF, DOC, DOCX, XLS, XLSX</p>
+                <button
+                  type="button"
+                  onClick={handleAddUrl}
+                  className="flex-shrink-0 px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-[var(--brand-red)] hover:bg-[#5a0404] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-red)]"
+                >
+                  <PlusCircle className="h-5 w-5" />
+                </button>
               </div>
 
-              {selectedFiles.length > 0 && (
+              {documentUrls.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Selected Files:</p>
-                  {selectedFiles.map((file, index) => (
+                  <p className="text-sm font-medium text-gray-700">Linked Documents:</p>
+                  {documentUrls.map((url, index) => (
                     <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-800">{file.name}</span>
+                        <LinkIcon className="h-4 w-4 text-gray-500" />
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline truncate">{url}</a>
                       </div>
-                      <button type="button" onClick={() => handleRemoveFile(file)} className="text-gray-500 hover:text-gray-700">
+                      <button type="button" onClick={() => handleRemoveUrl(url)} className="text-gray-500 hover:text-gray-700">
                         <XCircle className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
                 </div>
+              )}
+              {errors.documentUrls && (
+                <p className="text-red-500 text-sm mt-1">{errors.documentUrls.message}</p>
               )}
             </div>
 
@@ -349,13 +346,13 @@ export default function NewRequestForm() {
               </button>
               <button
                 type="submit"
-                disabled={loading || fetchingProjects || uploadingFiles}
+                disabled={loading || fetchingProjects} // Removed uploadingFiles
                 className="px-8 py-3 border border-transparent rounded-full shadow-lg text-sm font-semibold text-white bg-[var(--brand-red)] hover:bg-[#5a0404] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-red)] disabled:opacity-70 transition-all"
               >
-                {loading || uploadingFiles ? (
+                {loading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    {loading ? 'Submitting Request...' : 'Uploading Documents...'}
+                    {'Submitting Request...'}
                   </>
                 ) : (
                   'Submit Request'

@@ -28,6 +28,7 @@ interface QuoteData {
   deliveryFee: string | null;
   totalPrice: string;
   requestId: string | null;
+  createdAt: Date; // Added missing createdAt field
 }
 
 interface ClientQuoteViewProps {
@@ -40,6 +41,8 @@ interface ClientQuoteViewProps {
 export default function ClientQuoteView({ request, quote, items, userId }: ClientQuoteViewProps) {
   const router = useRouter();
   const [approving, setApproving] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState('');
 
   // Authorize: Only the client who owns the request can view it
   // This check would ideally also happen on the server-side page.tsx
@@ -62,11 +65,19 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
 
   const showQuote = quote && quote.status !== 'draft';
 
-  const handleApproveQuote = async () => {
-    if (!quote || !window.confirm('Are you sure you want to approve this quote? This action cannot be undone.')) {
+  const handleApproveQuote = () => { // Changed to not be async initially
+    if (!quote) {
       return;
     }
+    setDialogMessage(`By confirming approval, you authorize ${request.projectName} to commence work based on this quote. A 35% deposit invoice will be issued to you shortly thereafter.`);
+    setShowApproveDialog(true);
+  };
 
+  const confirmApproval = async () => {
+    if (!quote) {
+        return;
+    }
+    setShowApproveDialog(false); // Close dialog immediately
     setApproving(true);
     try {
       const res = await fetch(`/api/client/quotes/${quote.id}/approve`, {
@@ -155,6 +166,18 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
                 </table>
               </div>
             )}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                <div>
+                    <p className="text-gray-700 mb-1">Items Subtotal: <span className="font-semibold">${parseFloat(quote.netPrice).toFixed(2)}</span></p>
+                    {parseFloat(quote.taxRate || '0') > 0 && (
+                    <p className="text-gray-700 mb-1">Tax ({(parseFloat(quote.taxRate || '0') * 100).toFixed(2)}%): <span className="font-semibold">${parseFloat(quote.taxAmount || '0').toFixed(2)}</span></p>
+                    )}
+                    {parseFloat(quote.deliveryFee || '0') > 0 && (
+                    <p className="text-gray-700 mb-1">Delivery Fee: <span className="font-semibold">${parseFloat(quote.deliveryFee || '0').toFixed(2)}</span></p>
+                    )}
+                    <p className="text-gray-700 text-lg font-bold mt-2">Total Quote Price: <span className="font-semibold">${parseFloat(quote.totalPrice || '0').toFixed(2)}</span></p>
+                </div>
+            </div>
           </div>
 
           {/* Right Column: Quote Details & Actions */}
@@ -162,24 +185,10 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Quote Summary</h2>
               <p className="text-gray-700 mb-2">Status: <span className="font-semibold capitalize">{quote.status}</span></p>
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                <div className="flex justify-between text-gray-700">
-                  <span>Items Subtotal:</span>
-                  <span className="font-semibold">${parseFloat(quote.netPrice).toFixed(2)}</span>
-                </div>
-                {parseFloat(quote.taxRate || '0') > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>Tax ({(parseFloat(quote.taxRate || '0') * 100).toFixed(2)}%):</span>
-                    <span className="font-semibold">${parseFloat(quote.taxAmount || '0').toFixed(2)}</span>
-                  </div>
-                )}
-                {parseFloat(quote.deliveryFee || '0') > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>Delivery Fee:</span>
-                    <span className="font-semibold">${parseFloat(quote.deliveryFee || '0').toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-lg font-bold text-[var(--brand-black)] mt-4 pt-4 border-t border-gray-200">
+              <p className="text-gray-700 mb-2"><strong>Date Sent:</strong> {new Date(quote.createdAt).toLocaleString()}</p>
+              <p className="text-gray-700 mb-2 text-sm"><strong>Quote ID:</strong> <span className="text-xs">{quote.id}</span></p>
+              <div className="mt-4 pt-4 space-y-2"> {/* Removed border-t border-gray-100 */}
+                <div className="flex justify-between text-lg font-bold text-[var(--brand-black)] pt-4"> {/* Removed border-t border-gray-200 */}
                   <span>Total Quote Price:</span>
                   <span>${parseFloat(quote.totalPrice || '0').toFixed(2)}</span>
                 </div>
@@ -189,6 +198,8 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
             {/* Client Actions */}
              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-xl font-bold text-[var(--brand-black)] mb-4">Actions</h3>
+                <p className="text-gray-600 text-sm mb-4">You can either approve this quote directly, or add notes below to request a revision.</p>
+                <p className="text-gray-600 text-sm mb-4"><strong>Approving this quote will signal to the company that work can begin, and a deposit invoice will be issued shortly thereafter.</strong></p>
                 {quote.status === 'sent' && (
                     <div className="space-y-4"> {/* Changed to space-y for vertical stacking */}
                         <button
@@ -223,6 +234,32 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
             <p className="mt-2 text-gray-500 max-w-md mx-auto">
                 We are currently reviewing your request and preparing a quote. You will be notified via email when it is ready.
             </p>
+        </div>
+      )}
+      {/* Approve Quote Dialog */}
+      {showApproveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm mx-auto p-6">
+            <h3 className="text-xl font-bold text-[var(--brand-black)] mb-4">Confirm Quote Approval</h3>
+            <p className="text-gray-700 mb-6">{dialogMessage}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowApproveDialog(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmApproval}
+                disabled={approving}
+                className="px-4 py-2 rounded-md border border-transparent text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {approving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Approval'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

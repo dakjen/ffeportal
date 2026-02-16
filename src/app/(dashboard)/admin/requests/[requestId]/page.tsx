@@ -125,18 +125,11 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
             <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Quote Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p className="text-gray-700 mb-2"><strong>Quote ID:</strong> {quote.id}</p>
                     <p className="text-gray-700 mb-2"><strong>Status:</strong> <span className="font-semibold capitalize">{quote.status}</span></p>
                     <p className="text-gray-700 mb-2"><strong>Quote Created:</strong> {new Date(quote.createdAt).toLocaleString()}</p>
+                    <p className="text-gray-700 mb-2 text-sm"><strong>Quote ID:</strong> <span className="text-xs">{quote.id}</span></p>
                 </div>
                 <div>
-                    <p className="text-gray-700">Items Subtotal: <span className="font-semibold">${parseFloat(quote.netPrice || '0').toFixed(2)}</span></p>
-                    {parseFloat(quote.taxRate || '0') > 0 && (
-                    <p className="text-gray-700">Tax ({(parseFloat(quote.taxRate || '0') * 100).toFixed(2)}%): <span className="font-semibold">${parseFloat(quote.taxAmount || '0').toFixed(2)}</span></p>
-                    )}
-                    {parseFloat(quote.deliveryFee || '0') > 0 && (
-                    <p className="text-gray-700">Delivery Fee: <span className="font-semibold">${parseFloat(quote.deliveryFee || '0').toFixed(2)}</span></p>
-                    )}
                     <p className="text-gray-700 text-lg font-bold mt-2">Total Quote Price: <span className="font-semibold">${parseFloat(quote.totalPrice || '0').toFixed(2)}</span></p>
                 </div>
             </div>
@@ -170,6 +163,18 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                    <div className="text-right">
+                        <p className="text-gray-700 mb-1">Items Subtotal: <span className="font-semibold">${parseFloat(quote.netPrice || '0').toFixed(2)}</span></p>
+                        {parseFloat(quote.taxRate || '0') > 0 && (
+                        <p className="text-gray-700 mb-1">Tax ({(parseFloat(quote.taxRate || '0') * 100).toFixed(2)}%): <span className="font-semibold">${parseFloat(quote.taxAmount || '0').toFixed(2)}</span></p>
+                        )}
+                        {parseFloat(quote.deliveryFee || '0') > 0 && (
+                        <p className="text-gray-700 mb-1">Delivery Fee: <span className="font-semibold">${parseFloat(quote.deliveryFee || '0').toFixed(2)}</span></p>
+                        )}
+                        <p className="text-gray-700 text-lg font-bold mt-2">Total Quote Price: <span className="font-semibold">${parseFloat(quote.totalPrice || '0').toFixed(2)}</span></p>
+                    </div>
+                </div>
               </div>
             )}
           </div>
