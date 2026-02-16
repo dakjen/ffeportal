@@ -28,6 +28,7 @@ interface QuoteData {
   deliveryFee: string | null;
   totalPrice: string;
   requestId: string | null;
+  createdAt: Date;
 }
 
 interface ClientQuoteViewProps {
