@@ -61,8 +61,8 @@ const quoteStyles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
     fontSize: 10,
-    paddingTop: 50,
-    paddingBottom: 80,
+    paddingTop: 10,
+    paddingBottom: 40,
     paddingHorizontal: 45,
     lineHeight: 1.4,
   },
@@ -97,7 +97,7 @@ const quoteStyles = StyleSheet.create({
     marginBottom: 5,
   },
   servicesNarrative: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#000000',
     fontStyle: 'italic',
     marginBottom: 10,
@@ -140,13 +140,13 @@ const quoteStyles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 10,
+    marginTop: 5,
   },
   totalText: {
     width: 70,
     textAlign: 'right',
     padding: 3,
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     color: '#710505',
   },
@@ -304,7 +304,12 @@ const QuoteDocument = ({ quoteDetails }: { quoteDetails: QuoteDetails }) => (
       {/* Footer */}
       <Text style={quoteStyles.footer} fixed>
         Thank you for your business.
-        {quoteDetails.paymentTerms && <Text>{'\n'}Payment Terms: {quoteDetails.paymentTerms}</Text>}
+        {quoteDetails.paymentTerms && (
+          <Text>
+            {'\n'}
+            <Text style={{ fontFamily: 'Helvetica-Bold' }}>Payment Terms:</Text> {quoteDetails.paymentTerms}
+          </Text>
+        )}
       </Text>
 
     </Page>

@@ -86,7 +86,8 @@ export async function GET(
       taxAmount: parseFloat(quote.taxAmount || '0'),
       deliveryFee: parseFloat(quote.deliveryFee || '0'),
       totalPrice: parseFloat(quote.totalPrice),
-      sentAt: quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt), 
+      sentAt: quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt),
+      paymentTerms: "A 35% or more deposit may be required to initiate procurement. Remaining balance is due prior to delivery. This quote is valid for 14 days.",
 
       items: quoteItemsData.map(item => ({
         serviceName: item.serviceName,
