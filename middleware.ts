@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
 
   } catch (error) {
-    console.error('Middleware token verification failed:', error);
+    console.error('Middleware token verification failed.');
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
