@@ -1,5 +1,5 @@
 // src/lib/auth-edge.ts
-import { jwtVerify, importJWK, type JWK } from 'jose';
+import { jwtVerify } from 'jose';
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 
@@ -7,17 +7,10 @@ if (!jwtSecretEnv) {
   throw new Error('JWT_SECRET is not defined in environment variables');
 }
 
-// Convert the secret to a CryptoKey using Web Crypto API
+// Convert the secret for Web Crypto API compatibility.
 // This is crucial for Vercel Edge compatibility.
 const getSecretKey = async () => {
-  // Use a simple JWK representation for HMAC.
-  // The 'k' parameter is the base64url encoded symmetric key.
-  const jwk: JWK = {
-    kty: 'oct', // Octet sequence (symmetric key)
-    k: Buffer.from(jwtSecretEnv).toString('base64url'),
-    alg: 'HS256', // Algorithm used for signing/verification
-  };
-  return await importJWK(jwk, 'HS256');
+  return new TextEncoder().encode(jwtSecretEnv);
 };
 
 let cachedSecretKey: Promise<Uint8Array | CryptoKey> | null = null;
