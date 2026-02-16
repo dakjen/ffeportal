@@ -16,7 +16,6 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@react-pdf/renderer": "^4.3.2",
     "@sendgrid/mail": "^8.1.6",
-    "@tsndr/cloudflare-worker-jwt": "^3.2.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",
