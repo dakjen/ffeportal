@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { laborRequests } from '@/db/schema';
+import { laborRequests, notifications } from '@/db/schema';
 import { verifyToken } from '@/lib/auth-edge';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
@@ -38,6 +38,14 @@ export async function POST(req: Request) {
       contractorId,
       requestId,
       message,
+    });
+
+    // Create notification for the contractor
+    await db.insert(notifications).values({
+      userId: contractorId,
+      message: 'New quote request received',
+      link: '/contractor/labor-requests',
+      createdAt: new Date(),
     });
 
     return NextResponse.json({ message: 'Labor request created successfully' }, { status: 201 });

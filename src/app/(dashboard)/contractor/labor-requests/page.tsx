@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
 import { laborRequests, requests, users } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { ArrowRight } from 'lucide-react';
+import SubmitEstimateDialog from './submit-estimate-dialog';
 
 export default async function ContractorLaborRequestsPage() {
   const token = (await cookies()).get('auth_token')?.value;
@@ -67,9 +67,12 @@ export default async function ContractorLaborRequestsPage() {
                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{req.projectDescription}</p>
                 )}
 
-                <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[var(--brand-black)] hover:bg-gray-800">
-                   Submit Quote <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
+                <SubmitEstimateDialog 
+                  requestId={req.id} 
+                  projectName={req.projectName || 'General Inquiry'} 
+                  requestMessage={req.message}
+                  requestDescription={req.projectDescription}
+                />
               </div>
             ))}
           </div>

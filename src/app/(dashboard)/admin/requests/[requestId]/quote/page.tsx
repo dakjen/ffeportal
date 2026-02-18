@@ -44,6 +44,81 @@ type QuoteFormValues = {
 };
 
 
+// --- Constants ---
+const TAX_RATES: Record<string, number> = {
+  // Major Cities
+  "New York City, NY": 0.08875,
+  "Buffalo, NY": 0.0875,
+  "Rochester, NY": 0.08,
+  "Albany, NY": 0.08,
+  "Syracuse, NY": 0.08,
+  "Los Angeles, CA": 0.095,
+  "San Francisco, CA": 0.08625,
+  "San Diego, CA": 0.0775,
+  "Sacramento, CA": 0.0875,
+  "San Jose, CA": 0.09375,
+  "Houston, TX": 0.0825,
+  "Dallas, TX": 0.0825,
+  "Austin, TX": 0.0825,
+  "San Antonio, TX": 0.0825,
+  "Chicago, IL": 0.1025,
+  "Springfield, IL": 0.0975,
+  "Peoria, IL": 0.1,
+  
+  // States
+  "Alabama": 0.04,
+  "Alaska": 0,
+  "Arizona": 0.056,
+  "Arkansas": 0.065,
+  "California": 0.0725,
+  "Colorado": 0.029,
+  "Connecticut": 0.0635,
+  "Delaware": 0,
+  "Florida": 0.06,
+  "Georgia": 0.04,
+  "Hawaii": 0.04,
+  "Idaho": 0.06,
+  "Illinois": 0.0625,
+  "Indiana": 0.07,
+  "Iowa": 0.06,
+  "Kansas": 0.065,
+  "Kentucky": 0.06,
+  "Louisiana": 0.05,
+  "Maine": 0.055,
+  "Maryland": 0.06,
+  "Massachusetts": 0.0625,
+  "Michigan": 0.06,
+  "Minnesota": 0.06875,
+  "Mississippi": 0.07,
+  "Missouri": 0.04225,
+  "Montana": 0,
+  "Nebraska": 0.055,
+  "Nevada": 0.046,
+  "New Hampshire": 0,
+  "New Jersey": 0.06625,
+  "New Mexico": 0.05,
+  "New York": 0.04,
+  "North Carolina": 0.0475,
+  "North Dakota": 0.05,
+  "Ohio": 0.0575,
+  "Oklahoma": 0.045,
+  "Oregon": 0,
+  "Pennsylvania": 0.06,
+  "Rhode Island": 0.07,
+  "South Carolina": 0.06,
+  "South Dakota": 0.045,
+  "Tennessee": 0.07,
+  "Texas": 0.0625,
+  "Utah": 0.047,
+  "Vermont": 0.06,
+  "Virginia": 0.043,
+  "Washington": 0.065,
+  "Washington DC": 0.06,
+  "West Virginia": 0.06,
+  "Wisconsin": 0.05,
+  "Wyoming": 0.04,
+};
+
 // --- Sortable Item Component ---
 interface SortableItemProps {
   item: QuoteItem;
@@ -186,6 +261,9 @@ export default function QuoteBuilderPage() {
     clientCompanyName?: string;
     currentQuoteId?: string;
     currentQuoteStatus?: string;
+    description?: string;
+    status?: string;
+    createdAt?: string;
   }
 
   const [request, setRequest] = useState<RequestWithQuoteInfo | null>(null);
@@ -197,8 +275,9 @@ export default function QuoteBuilderPage() {
   const [selectedQuoteItems, setSelectedQuoteItems] = useState<QuoteItem[]>([]);
   const [taxRate, setTaxRate] = useState<number>(0);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [selectedLocation, setSelectedLocation] = useState<string>('custom'); // State for location dropdown
 
-  const isQuoteEditable = request?.currentQuoteStatus === 'draft';
+  const isQuoteEditable = !request?.currentQuoteStatus || request?.currentQuoteStatus === 'draft';
 
   // Form handling
   const { handleSubmit, setValue } = useForm<QuoteFormValues>({
@@ -208,6 +287,23 @@ export default function QuoteBuilderPage() {
       status: 'draft',
     } as QuoteFormValues, // Explicit cast
   });
+
+  // Handle Location Change
+  const handleLocationChange = (location: string) => {
+    setSelectedLocation(location);
+    if (location !== 'custom' && TAX_RATES[location] !== undefined) {
+      setTaxRate(TAX_RATES[location]);
+    }
+  };
+
+  // Handle Manual Tax Rate Change
+  const handleManualTaxRateChange = (rate: number) => {
+    setTaxRate(rate);
+    // Only set to custom if the new rate doesn't match the selected location's rate (allowing for tiny floating point diffs)
+    if (selectedLocation !== 'custom' && Math.abs(rate - (TAX_RATES[selectedLocation] || 0)) > 0.00001) {
+       setSelectedLocation('custom');
+    }
+  };
 
   // Fetch request details and services
   useEffect(() => {
@@ -450,6 +546,16 @@ export default function QuoteBuilderPage() {
 
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-md">{error}</div>}
 
+      {/* Request Details Box */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 className="text-lg font-semibold text-[var(--brand-black)] mb-2">Request Details</h3>
+        <p className="text-gray-700 text-sm whitespace-pre-wrap">{request.description || "No description provided."}</p>
+        <div className="mt-4 flex gap-6 text-sm text-gray-500">
+            <span><strong>Submitted:</strong> {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '-'}</span>
+            <span><strong>Status:</strong> <span className="capitalize">{request.status}</span></span>
+        </div>
+      </div>
+
       {/* Service Catalog - Moved to a top section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <h3 className="font-semibold text-[var(--brand-black)]">Service Catalog</h3>
@@ -531,6 +637,30 @@ export default function QuoteBuilderPage() {
               <span className="font-bold text-[var(--brand-black)]">${netPrice.toFixed(2)}</span>
             </div>
 
+            {/* Contract Location Dropdown */}
+            <div className="flex justify-between items-center text-sm">
+              <label htmlFor="contractLocation" className="text-gray-500">Contract Location:</label>
+              <select
+                id="contractLocation"
+                value={selectedLocation}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                disabled={!isQuoteEditable}
+                className="w-48 p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-[var(--brand-black)] bg-white"
+              >
+                <option value="custom">Custom / Manual</option>
+                <optgroup label="Major Cities">
+                  {Object.keys(TAX_RATES).filter(key => key.includes(',')).sort().map(city => (
+                    <option key={city} value={city}>{city} ({(TAX_RATES[city] * 100).toFixed(3)}%)</option>
+                  ))}
+                </optgroup>
+                <optgroup label="States">
+                  {Object.keys(TAX_RATES).filter(key => !key.includes(',')).sort().map(state => (
+                    <option key={state} value={state}>{state} ({(TAX_RATES[state] * 100).toFixed(3)}%)</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
             {/* Tax Rate Input */}
             <div className="flex justify-between items-center text-sm">
               <label htmlFor="taxRate" className="text-gray-500">Tax Rate (%):</label>
@@ -538,11 +668,11 @@ export default function QuoteBuilderPage() {
                 id="taxRate"
                 type="number"
                 min="0"
-                step="0.01"
-                value={taxRate * 100} // Display as percentage
-                onChange={(e) => setTaxRate(parseFloat(e.target.value) / 100 || 0)}
+                step="0.001"
+                value={Number((taxRate * 100).toFixed(3))} // Display as percentage
+                onChange={(e) => handleManualTaxRateChange(parseFloat(e.target.value) / 100 || 0)}
                 className="w-24 p-1.5 border border-gray-200 rounded focus:border-[var(--brand-red)] outline-none text-right text-[var(--brand-black)]"
-                readOnly={!isQuoteEditable} // Added readOnly
+                readOnly={!isQuoteEditable}
               />
             </div>
 

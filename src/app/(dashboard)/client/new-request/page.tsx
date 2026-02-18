@@ -12,14 +12,21 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 const newRequestSchema = z.object({
-  projectId: z.string().uuid('Invalid Project ID').optional(),
+  projectId: z.string().optional(),
   projectName: z.string().min(1, 'Project Name is required'),
-  projectLocation: z.string().min(1, 'Project Location is required').optional(),
+  projectLocation: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
-  documentUrls: z.array(z.string().url('Invalid URL format')).optional(), // New: Optional array of URLs
-}).refine(data => data.projectId || (data.projectName && data.projectLocation), {
-  message: 'Either select an existing project or provide a new project name and location',
-  path: ['projectName'],
+  documentUrls: z.array(z.string().url('Invalid URL format')).optional(),
+}).superRefine((data, ctx) => {
+  if (!data.projectId) {
+    if (!data.projectLocation || data.projectLocation.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Project Location is required for new projects',
+        path: ['projectLocation'],
+      });
+    }
+  }
 });
 
 type NewRequestFormValues = z.infer<typeof newRequestSchema>;

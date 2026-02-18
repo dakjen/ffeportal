@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { quotes, requests, users, quoteItems } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { quotes, requests, users, quoteItems, comments } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
@@ -58,8 +58,22 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
 
   // Fetch quote items only if quote exists
   let items: QuoteItem[] = [];
+  let quoteComments: any[] = [];
+
   if (quote) {
     items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
+    
+    quoteComments = await db.select({
+      id: comments.id,
+      message: comments.message,
+      createdAt: comments.createdAt,
+      userName: users.name,
+      userRole: users.role,
+    })
+    .from(comments)
+    .leftJoin(users, eq(comments.userId, users.id))
+    .where(eq(comments.quoteId, quote.id))
+    .orderBy(desc(comments.createdAt));
   }
 
   return (
@@ -177,6 +191,29 @@ export default async function AdminRequestDetailsPage({ params }: AdminRequestDe
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+             <h2 className="text-xl font-bold text-[var(--brand-black)] mb-4">Communication History</h2>
+             {quoteComments.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No notes or comments yet.</p>
+             ) : (
+                <div className="space-y-4">
+                  {quoteComments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-medium text-sm text-gray-900">
+                          {comment.userName || (comment.userRole === 'admin' ? 'Administrator' : 'Client')}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.message}</p>
+                    </div>
+                  ))}
+                </div>
+             )}
           </div>
         </>
       ) : (

@@ -31,14 +31,23 @@ interface QuoteData {
   createdAt: Date;
 }
 
+interface CommentData {
+  id: string;
+  message: string;
+  createdAt: Date;
+  userName: string | null;
+  userRole: string | null;
+}
+
 interface ClientQuoteViewProps {
   request: RequestData;
   quote: QuoteData | null;
   items: QuoteItem[];
+  comments?: CommentData[];
   userId: string;
 }
 
-export default function ClientQuoteView({ request, quote, items, userId }: ClientQuoteViewProps) {
+export default function ClientQuoteView({ request, quote, items, comments = [], userId }: ClientQuoteViewProps) {
   const router = useRouter();
   const [approving, setApproving] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -220,8 +229,30 @@ export default function ClientQuoteView({ request, quote, items, userId }: Clien
             {quote.status === 'approved' && (
                 <p className="text-green-600 font-medium">This quote has been approved.</p>
             )}
-            {quote.status === 'revised' && (
-                <p className="text-blue-600 font-medium">This quote has been revised. Please review the new version.</p>
+            {(quote.status === 'sent' || quote.status === 'approved' || quote.status === 'revised') && (
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <h4 className="text-lg font-semibold text-[var(--brand-black)] mb-4">Communication History</h4>
+                
+                {comments.length === 0 ? (
+                  <p className="text-gray-500 text-sm italic">No notes or comments yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-medium text-sm text-gray-900">
+                            {comment.userName || (comment.userRole === 'admin' ? 'Administrator' : 'Client')}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </>

@@ -45,12 +45,44 @@ export const laborRequests = pgTable('labor_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
   adminId: uuid('admin_id').notNull().references(() => users.id),
   contractorId: uuid('contractor_id').notNull().references(() => users.id),
-  requestId: uuid('request_id').references(() => requests.id), // Optional: link to a client request
+  requestId: uuid('request_id').references(() => requests.id),
   message: text('message').notNull(),
   status: laborRequestStatusEnum('status').default('pending').notNull(),
   progress: laborRequestProgressEnum('progress'),
+  
+  // Estimate Details
+  quotePrice: numeric('quote_price'), // Final Total
+  subtotal: numeric('subtotal'),
+  discount: numeric('discount'),
+  depositPaid: numeric('deposit_paid'),
+  depositRequired: boolean('deposit_required').default(false),
+  depositPercentage: numeric('deposit_percentage'),
+  
+  contractorNotes: text('contractor_notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const laborRequestItems = pgTable('labor_request_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  laborRequestId: uuid('labor_request_id').notNull().references(() => laborRequests.id),
+  serviceName: varchar('service_name', { length: 256 }).notNull(),
+  description: text('description'),
+  price: numeric('price').notNull(),
+  quantity: numeric('quantity').default('1').notNull(),
+  total: numeric('total').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const laborRequestItems = pgTable('labor_request_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  laborRequestId: uuid('labor_request_id').notNull().references(() => laborRequests.id),
+  serviceName: varchar('service_name', { length: 256 }).notNull(),
+  description: text('description'),
+  price: numeric('price').notNull(),
+  quantity: numeric('quantity').default('1').notNull(),
+  total: numeric('total').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const requests = pgTable('requests', {
@@ -206,10 +238,15 @@ export const contractorRequestsRelations = relations(contractorRequests, ({ one 
   admin: one(users, { fields: [contractorRequests.adminId], references: [users.id], relationName: 'admin_requests' }),
 }));
 
-export const laborRequestsRelations = relations(laborRequests, ({ one }) => ({
+export const laborRequestsRelations = relations(laborRequests, ({ one, many }) => ({
   admin: one(users, { fields: [laborRequests.adminId], references: [users.id], relationName: 'admin_labor_requests' }),
   contractor: one(users, { fields: [laborRequests.contractorId], references: [users.id], relationName: 'contractor_labor_requests' }),
   request: one(requests, { fields: [laborRequests.requestId], references: [requests.id] }),
+  items: many(laborRequestItems),
+}));
+
+export const laborRequestItemsRelations = relations(laborRequestItems, ({ one }) => ({
+  laborRequest: one(laborRequests, { fields: [laborRequestItems.laborRequestId], references: [laborRequests.id] }),
 }));
 
 export const requestsRelations = relations(requests, ({ one, many }) => ({

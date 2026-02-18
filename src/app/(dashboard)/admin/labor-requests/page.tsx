@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
-import { requests, users } from '@/db/schema';
+import { requests, users, laborRequests } from '@/db/schema'; // Import laborRequests
 import { eq, desc, and, or } from 'drizzle-orm';
 import LaborRequestManager from './labor-request-manager';
 
@@ -49,6 +49,21 @@ export default async function LaborRequestsPage() {
   .where(or(eq(requests.status, 'pending'), eq(requests.status, 'quoted')))
   .orderBy(desc(requests.createdAt));
 
+  // Fetch existing labor requests
+  const existingLaborRequests = await db.select({
+    id: laborRequests.id,
+    contractorName: users.name,
+    projectName: requests.projectName,
+    status: laborRequests.status,
+    message: laborRequests.message,
+    createdAt: laborRequests.createdAt,
+  })
+  .from(laborRequests)
+  .leftJoin(users, eq(laborRequests.contractorId, users.id))
+  .leftJoin(requests, eq(laborRequests.requestId, requests.id))
+  .where(eq(laborRequests.adminId, userPayload.id))
+  .orderBy(desc(laborRequests.createdAt));
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div>
@@ -57,7 +72,11 @@ export default async function LaborRequestsPage() {
       </div>
 
       <div className="flex-1">
-        <LaborRequestManager contractors={contractors} clientRequests={clientRequests} />
+        <LaborRequestManager 
+          contractors={contractors} 
+          clientRequests={clientRequests} 
+          existingLaborRequests={existingLaborRequests} 
+        />
       </div>
     </div>
   );

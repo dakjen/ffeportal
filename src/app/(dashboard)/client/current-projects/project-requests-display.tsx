@@ -29,12 +29,31 @@ interface ProjectRequestsDisplayProps {
 export default function ProjectRequestsDisplay({ initialProjects, initialRequests }: ProjectRequestsDisplayProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
+  // Create a pseudo-project for orphaned requests if they exist
+  const projectsWithGeneral = useMemo(() => {
+    const hasOrphanedRequests = initialRequests.some(req => !req.projectId);
+    if (hasOrphanedRequests) {
+      const generalProject: Project = {
+        id: 'general',
+        name: 'General Requests',
+        location: 'Uncategorized',
+        description: 'Requests not linked to a specific project',
+        createdAt: new Date(),
+      };
+      return [generalProject, ...initialProjects];
+    }
+    return initialProjects;
+  }, [initialProjects, initialRequests]);
+
   const selectedProject = useMemo(() => {
-    return initialProjects.find(p => p.id === selectedProjectId);
-  }, [initialProjects, selectedProjectId]);
+    return projectsWithGeneral.find(p => p.id === selectedProjectId);
+  }, [projectsWithGeneral, selectedProjectId]);
 
   const filteredRequests = useMemo(() => {
     if (!selectedProjectId) return [];
+    if (selectedProjectId === 'general') {
+      return initialRequests.filter(req => !req.projectId);
+    }
     return initialRequests.filter(req => req.projectId === selectedProjectId);
   }, [initialRequests, selectedProjectId]);
 
@@ -61,7 +80,7 @@ export default function ProjectRequestsDisplay({ initialProjects, initialRequest
             </Link>
           </div>
 
-          {initialProjects.length === 0 ? (
+          {projectsWithGeneral.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Projects Found</h3>
               <p>You haven&apos;t created any projects yet. Let&apos;s start one!</p>
@@ -77,7 +96,7 @@ export default function ProjectRequestsDisplay({ initialProjects, initialRequest
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {initialProjects.map(project => (
+              {projectsWithGeneral.map(project => (
                 <div 
                   key={project.id} 
                   className="p-4 hover:bg-gray-50 cursor-pointer transition-colors flex justify-between items-center"

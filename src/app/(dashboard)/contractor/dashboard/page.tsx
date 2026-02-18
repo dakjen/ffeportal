@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
-import { invoices, users, contractorRequests } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { invoices, users, contractorRequests, laborRequests } from '@/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, DollarSign, Clock, CheckCircle, UserPlus, FileText, User } from 'lucide-react';
 
@@ -48,6 +48,11 @@ export default async function ContractorDashboardPage() {
   const pendingRequests = myRequests.filter(r => r.status === 'pending');
   const connectedAdmins = myRequests.filter(r => r.status === 'approved');
 
+  // Fetch pending labor requests count
+  const pendingLaborRequests = await db.select()
+    .from(laborRequests)
+    .where(and(eq(laborRequests.contractorId, user.id), eq(laborRequests.status, 'pending')));
+
   return (
     <div className="space-y-8 bg-gray-50 min-h-screen p-6">
       <div className="flex items-center justify-between">
@@ -85,7 +90,12 @@ export default async function ContractorDashboardPage() {
 
         {/* Sub Quotes (Labor Requests) */}
         <Link href="/contractor/labor-requests" className="block group">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col items-center text-center space-y-3 h-full justify-center">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col items-center text-center space-y-3 h-full justify-center relative">
+            {pendingLaborRequests.length > 0 && (
+              <div className="absolute top-4 right-4 bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                  {pendingLaborRequests.length} Pending
+              </div>
+            )}
             <div className="bg-orange-50 p-3 rounded-full group-hover:bg-orange-100 transition-colors">
               <FileText className="h-6 w-6 text-orange-600" />
             </div>
