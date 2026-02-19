@@ -74,17 +74,6 @@ export const laborRequestItems = pgTable('labor_request_items', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const laborRequestItems = pgTable('labor_request_items', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  laborRequestId: uuid('labor_request_id').notNull().references(() => laborRequests.id),
-  serviceName: varchar('service_name', { length: 256 }).notNull(),
-  description: text('description'),
-  price: numeric('price').notNull(),
-  quantity: numeric('quantity').default('1').notNull(),
-  total: numeric('total').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
 export const requests = pgTable('requests', {
   id: uuid('id').defaultRandom().primaryKey(),
   clientId: uuid('client_id').notNull().references(() => users.id),
