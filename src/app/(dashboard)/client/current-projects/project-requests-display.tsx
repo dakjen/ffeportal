@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus, Folder, FileText, ArrowLeft } from 'lucide-react';
+import DeleteRequestButton from '../requests/delete-request-button';
 
 interface Project {
   id: string;
@@ -183,9 +184,14 @@ export default function ProjectRequestsDisplay({ initialProjects, initialRequest
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(req.createdAt).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Link href={`/client/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404]">
-                                                {req.status === 'quoted' || req.status === 'approved' || req.status === 'contract_sent' ? 'View Quote' : 'View Details'}
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-3">
+                                              <Link href={`/client/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404]">
+                                                  {req.status === 'quoted' || req.status === 'approved' || req.status === 'contract_sent' ? 'View Quote' : 'View Details'}
+                                              </Link>
+                                              {req.status === 'pending' && (
+                                                <DeleteRequestButton requestId={req.id} />
+                                              )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

@@ -267,6 +267,7 @@ export default function QuoteBuilderPage() {
   }
 
   const [request, setRequest] = useState<RequestWithQuoteInfo | null>(null);
+  const [documents, setDocuments] = useState<any[]>([]); // State for documents
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingQuote, setSavingQuote] = useState(false);
@@ -305,7 +306,7 @@ export default function QuoteBuilderPage() {
     }
   };
 
-  // Fetch request details and services
+  // Fetch request details, documents, and services
   useEffect(() => {
     async function fetchData() {
       try {
@@ -325,6 +326,7 @@ export default function QuoteBuilderPage() {
           currentQuoteId: reqData.quote?.id, // Get quote id from requestData if it exists
           currentQuoteStatus: reqData.quote?.status, // Get quote status from requestData if it exists
         });
+        setDocuments(reqData.documents || []); // Set documents state
         setAvailableServices(servicesData.services);
       } catch (err: unknown) {
         if (err instanceof Error) setError(err.message);
@@ -555,6 +557,31 @@ export default function QuoteBuilderPage() {
             <span><strong>Status:</strong> <span className="capitalize">{request.status}</span></span>
         </div>
       </div>
+
+      {/* Documents Section */}
+      {documents.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-[var(--brand-black)] mb-4">Documents</h3>
+          <div className="space-y-2">
+            {documents.map((doc, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">{doc.fileUrl.split('/').pop() || 'Document'}</span>
+                  <span className="text-xs text-gray-500 uppercase px-2 py-0.5 bg-gray-200 rounded">{doc.fileType || 'FILE'}</span>
+                </div>
+                <a 
+                  href={doc.fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                >
+                  View / Download
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Service Catalog - Moved to a top section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">

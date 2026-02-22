@@ -4,7 +4,8 @@ import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
 import { laborRequests, requests, users } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import SubmitEstimateDialog from './submit-estimate-dialog';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 export default async function ContractorLaborRequestsPage() {
   const token = (await cookies()).get('auth_token')?.value;
@@ -67,12 +68,12 @@ export default async function ContractorLaborRequestsPage() {
                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{req.projectDescription}</p>
                 )}
 
-                <SubmitEstimateDialog 
-                  requestId={req.id} 
-                  projectName={req.projectName || 'General Inquiry'} 
-                  requestMessage={req.message}
-                  requestDescription={req.projectDescription}
-                />
+                <Link 
+                  href={`/contractor/labor-requests/${req.id}/quote`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[var(--brand-black)] hover:bg-gray-800 transition-colors"
+                >
+                  Submit Estimate <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </div>
             ))}
           </div>

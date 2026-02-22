@@ -2,11 +2,13 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
-import { requests, users } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { requests, users, projects } from '@/db/schema'; // Import projects
+import { desc, eq, and, or, sql } from 'drizzle-orm';
 import Link from 'next/link';
+import { Plus, Search } from 'lucide-react';
+import AdminDeleteRequestButton from './admin-delete-request-button';
 
-export default async function AdminRequestsPage() {
+export default async function AdminRequestsPage(props: { searchParams: Promise<{ search?: string }> }) {
   const token = (await cookies()).get('auth_token')?.value;
 
   if (!token) {
@@ -85,9 +87,12 @@ export default async function AdminRequestsPage() {
                     </td>
                     <td className="py-3 px-4 text-gray-600">{new Date(req.createdAt).toLocaleDateString()}</td>
                     <td className="py-3 px-4 text-right">
-                      <Link href={`/admin/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
-                        Manage
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/admin/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
+                          Manage
+                        </Link>
+                        <AdminDeleteRequestButton requestId={req.id} />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -132,9 +137,12 @@ export default async function AdminRequestsPage() {
                     </td>
                     <td className="py-3 px-4 text-gray-600">{new Date(req.createdAt).toLocaleDateString()}</td>
                     <td className="py-3 px-4 text-right">
-                      <Link href={`/admin/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
-                        View Details
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/admin/requests/${req.id}`} className="text-[var(--brand-red)] hover:text-[#5a0404] font-medium">
+                          View Details
+                        </Link>
+                        <AdminDeleteRequestButton requestId={req.id} />
+                      </div>
                     </td>
                   </tr>
                 ))}
