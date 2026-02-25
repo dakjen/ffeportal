@@ -105,8 +105,8 @@ export default function AdminSearch({ existingRequestAdminIds }: AdminSearchProp
                     <User className="h-5 w-5 text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-[var(--brand-black)]">{admin.name}</h4>
-                    {admin.companyName && <p className="text-sm font-medium text-gray-700">{admin.companyName}</p>}
+                    <h4 className="font-semibold text-[var(--brand-black)]">{admin.companyName || admin.name}</h4>
+                    {admin.companyName && <p className="text-sm font-medium text-gray-700">{admin.name}</p>}
                     <p className="text-xs text-gray-500">{admin.email}</p>
                   </div>
                 </div>

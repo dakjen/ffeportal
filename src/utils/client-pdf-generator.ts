@@ -6,11 +6,18 @@ import { jsPDF } from 'jspdf';
 const formatCurrency = (amount: number) =>
   `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
-// Invoice Interfaces for Client-Side JS PDF
-export interface InvoiceFormOutput {
-  projectName: string;
+export interface InvoiceItem {
   description: string;
   amount: number;
+}
+
+// Invoice Interfaces for Client-Side JS PDF
+export interface InvoiceFormOutput {
+  invoiceNumber?: string;
+  dueDate?: string;
+  projectName: string;
+  items: InvoiceItem[];
+  totalAmount: number;
   clientId?: string | null;
   clientEmail?: string | null;
 }
@@ -44,7 +51,7 @@ function hexToRgb(hex: string): [number, number, number] {
 
 // Invoice PDF generation logic
 export const generateClientSideInvoicePdf = (
-  data: InvoiceFormOutput, // Use InvoiceFormOutput
+  data: InvoiceFormOutput,
   clients: ClientOption[],
   contractorDetails: ContractorDetails
 ) => {
@@ -72,14 +79,32 @@ export const generateClientSideInvoicePdf = (
   // Invoice Meta
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 180, 50, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Invoice #`, 140, 55);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${data.invoiceNumber || 'N/A'}`, 180, 55, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Date:`, 140, 62);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${new Date().toLocaleDateString()}`, 180, 62, { align: 'right' });
+
+  if (data.dueDate) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Due Date:`, 140, 69);
+    doc.setFont('helvetica', 'normal');
+    // Ensure the date is interpreted locally, safely avoiding timezone shifts
+    const [year, month, day] = data.dueDate.split('-');
+    const dueDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    doc.text(`${dueDateObj.toLocaleDateString()}`, 180, 69, { align: 'right' });
+  }
 
   // Bill To Section
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...brandRed);
   doc.text('Bill To:', 20, 60);
-  doc.line(20, 62, 190, 62); // Line
+  doc.line(20, 62, 120, 62); // Line
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
@@ -88,10 +113,15 @@ export const generateClientSideInvoicePdf = (
   
   if (data.clientId) {
      const client = clients.find(c => c.id === data.clientId);
-     doc.text(client?.name || '', 20, yPos);
-     yPos += 5;
      if (client?.companyName) {
+       doc.setFont('helvetica', 'bold');
        doc.text(client.companyName, 20, yPos);
+       yPos += 5;
+       doc.setFont('helvetica', 'normal');
+       doc.text(client.name, 20, yPos);
+       yPos += 5;
+     } else {
+       doc.text(client?.name || '', 20, yPos);
        yPos += 5;
      }
      doc.text(client?.email || '', 20, yPos);
@@ -114,18 +144,36 @@ export const generateClientSideInvoicePdf = (
   doc.text('Project:', 20, yPos);
   doc.setFont('helvetica', 'normal');
   doc.text(data.projectName, 50, yPos); // Include client project name
-  yPos += 10; // Move yPos down after adding project name
+  yPos += 15;
 
+  // Table Header
+  doc.setFillColor(...lightGray);
+  doc.rect(20, yPos, 170, 8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.text('Description:', 20, yPos);
+  doc.text('Description', 22, yPos + 6);
+  doc.text('Amount', 188, yPos + 6, { align: 'right' });
   
-  yPos += 7;
+  yPos += 15;
   doc.setFont('helvetica', 'normal');
-  const splitDescription = doc.splitTextToSize(data.description, 170);
-  doc.text(splitDescription, 20, yPos);
-  
-  const descHeight = splitDescription.length * 5;
-  yPos += descHeight + 10;
+
+  // Table Rows (Items)
+  data.items.forEach(item => {
+    // Description can be long, so split it
+    const splitDescription = doc.splitTextToSize(item.description, 130);
+    doc.text(splitDescription, 22, yPos);
+    
+    // Print amount
+    doc.text(formatCurrency(item.amount), 188, yPos, { align: 'right' });
+    
+    const rowHeight = splitDescription.length * 5;
+    yPos += rowHeight + 5;
+
+    // Line under each row (optional, can look clean)
+    doc.setDrawColor(240, 240, 240);
+    doc.line(20, yPos - 3, 190, yPos - 3);
+  });
+
+  yPos += 10;
 
   // Total Section
   doc.setFillColor(...lightGray);
@@ -137,7 +185,7 @@ export const generateClientSideInvoicePdf = (
   doc.text('Total Amount:', 130, yPos + 13);
   doc.setTextColor(...brandRed);
   doc.setFontSize(14);
-  doc.text(`$${data.amount.toFixed(2)}`, 185, yPos + 13, { align: 'right' });
+  doc.text(formatCurrency(data.totalAmount), 185, yPos + 13, { align: 'right' });
 
   // Footer
   doc.setFontSize(10);
