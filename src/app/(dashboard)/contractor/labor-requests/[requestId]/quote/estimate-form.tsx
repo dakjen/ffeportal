@@ -64,7 +64,7 @@ export default function EstimateForm({ requestId }: EstimateFormProps) {
   const subtotal = watchedItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
   const discountAmount = watchedDiscount || 0;
   const total = Math.max(0, subtotal - discountAmount);
-  constRP = watchedDepositRequired ? (total * ((watchedDepositPercent || 0) / 100)) : 0;
+  const depositAmount = watchedDepositRequired ? (total * ((watchedDepositPercent || 0) / 100)) : 0;
 
   const onSubmit = async (data: EstimateFormValues) => {
     setIsSubmitting(true);
