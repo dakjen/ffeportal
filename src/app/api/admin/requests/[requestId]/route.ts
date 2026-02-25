@@ -2,8 +2,81 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-edge';
 import { db } from '@/db';
-import { requests, documents, quotes, quoteItems, comments, notifications, contractorRequests, laborRequests, laborRequestItems, invoices } from '@/db/schema';
+import { requests, documents, quotes, quoteItems, comments, notifications, contractorRequests, laborRequests, laborRequestItems, invoices, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ requestId: string }> }
+) {
+  try {
+    const token = (await cookies()).get('auth_token')?.value;
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+    if (!payload || payload.role !== 'admin') {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    const resolvedParams = await params;
+    const { requestId } = resolvedParams;
+
+    const [request] = await db
+      .select({
+        id: requests.id,
+        projectName: requests.projectName,
+        description: requests.description,
+        status: requests.status,
+        createdAt: requests.createdAt,
+        clientId: requests.clientId,
+      })
+      .from(requests)
+      .where(eq(requests.id, requestId));
+
+    if (!request) {
+      return NextResponse.json({ message: 'Request not found' }, { status: 404 });
+    }
+
+    // Get client details
+    let client = null;
+    if (request.clientId) {
+      const [clientData] = await db
+        .select({ name: users.name, companyName: users.companyName })
+        .from(users)
+        .where(eq(users.id, request.clientId));
+      client = clientData;
+    }
+
+    // Get documents
+    const requestDocs = await db
+      .select({ fileUrl: documents.fileUrl, fileType: documents.fileType })
+      .from(documents)
+      .where(eq(documents.requestId, requestId));
+
+    // Get quote (if any)
+    const [quote] = await db
+      .select({ id: quotes.id, status: quotes.status })
+      .from(quotes)
+      .where(eq(quotes.requestId, requestId))
+      .limit(1);
+
+    return NextResponse.json({
+      request: {
+        ...request,
+        clientName: client?.name || 'Unknown',
+        clientCompanyName: client?.companyName,
+      },
+      documents: requestDocs,
+      quote: quote || null,
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Admin get request error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
 
 export async function DELETE(
   req: Request,

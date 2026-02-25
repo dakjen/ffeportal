@@ -28,8 +28,8 @@ export async function GET(
       .limit(1); // Assuming only one quote per request or taking the first one
 
     if (!quote) {
-      // No draft quote found for this request, which is a valid scenario for building a new one
-      return NextResponse.json({ message: 'No draft quote found for this request' }, { status: 404 });
+      // No draft quote found for this request, returning null instead of 404 to keep console clean
+      return NextResponse.json({ quote: null, message: 'No draft quote found for this request' }, { status: 200 });
     }
 
     const items = await db.select().from(quoteItems).where(eq(quoteItems.quoteId, quote.id));
